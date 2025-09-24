@@ -1,6 +1,6 @@
 # 🕒 Tech-Ponto - Sistema de Controle de Ponto Eletrônico
 
-Sistema completo de controle de ponto eletrônico desenvolvido para pequenas e médias empresas, com interface moderna e funcionalidades avançadas.
+Sistema completo de controle de ponto eletrônico desenvolvido para pequenas e médias empresas, com interface moderna, funcionalidades avançadas e **sistema de atualizações automáticas via GitHub**.
 
 ## 📋 Características Principais
 
@@ -16,6 +16,8 @@ Sistema completo de controle de ponto eletrônico desenvolvido para pequenas e m
 - ✅ **Relatórios Avançados**: Visualização e filtros por funcionário/período
 - ✅ **Cartão de Ponto**: Relatório profissional em HTML/PDF
 - ✅ **Configurações da Empresa**: Personalização completa
+- ✅ **🔄 Sistema de Atualizações**: Atualizações automáticas via GitHub
+- ✅ **🛡️ Sistema Inteligente**: Verificação de sessão baseada em atividade
 
 ## 🚀 Instalação Rápida
 
@@ -23,13 +25,14 @@ Sistema completo de controle de ponto eletrônico desenvolvido para pequenas e m
 - PHP 8.2+ (com extensões: PDO, SQLite3, JSON)
 - Navegador web moderno
 - Windows/Linux/macOS
+- Git (para sistema de atualizações)
 
 ### Instalação
 1. **Clone/Baixe** o projeto
 2. **Navegue** até a pasta do projeto
 3. **Execute** o servidor PHP:
    ```bash
-   php -S localhost:8000 -t frontend
+   php -S localhost:8000 -t .
    ```
 4. **Acesse** no navegador: `http://localhost:8000`
 
@@ -76,6 +79,7 @@ ceavicponto/
 │   ├── 📁 api/                     # APIs PHP
 │   ├── 📁 config/                  # Configurações
 │   ├── 📁 data/                    # Banco SQLite
+│   ├── 📁 updates/                 # Sistema de atualizações
 │   └── 📁 migrations/              # Migrações
 └── 📄 *.bat                        # Scripts Windows
 ```
@@ -115,6 +119,55 @@ ceavicponto/
 - **Auditoria** completa
 - **Validação** de inputs
 - **Prepared statements**
+- **Sistema inteligente** de verificação de sessão
+
+## 🔄 Sistema de Atualizações Automáticas
+
+### **Características de Segurança**
+- ✅ **Backup Automático**: Cria backup antes de cada atualização
+- ✅ **Rollback Automático**: Reverte em caso de erro
+- ✅ **Verificação de Integridade**: Valida arquivos antes da instalação
+- ✅ **Preservação de Dados**: Mantém banco de dados e configurações
+- ✅ **Logs Completos**: Registra todas as operações
+- ✅ **Confirmação Admin**: Requer confirmação do administrador
+
+### **Como Funciona**
+1. **Modificar código** e alterar versão em `backend/updates/config.php`
+2. **Commit e push** para GitHub
+3. **Criar release** no GitHub com tag (ex: `v2.0.1`)
+4. **Sistema detecta** automaticamente a nova versão
+5. **Admin confirma** instalação no painel
+6. **Backup automático** + instalação + verificação
+
+### **Configuração Inicial**
+```php
+// backend/updates/config.php
+define('GITHUB_REPO_OWNER', 'seuusuario'); // Seu usuário GitHub
+define('GITHUB_REPO_NAME', 'ceavicponto'); // Nome do repositório
+define('CURRENT_VERSION', '2.0.1'); // Versão atual
+```
+
+### **Como Usar**
+1. Acesse o painel admin → Aba "Atualizações"
+2. Clique em "Verificar Agora"
+3. Se houver atualização, clique em "Instalar"
+4. Confirme a instalação
+
+## 🧠 Sistema Inteligente de Sessão
+
+### **Características**
+- ✅ **Verificação por Atividade**: Só verifica quando há interação do usuário
+- ✅ **Modal com Countdown**: Aviso antes do redirecionamento
+- ✅ **Avisos Discretos**: Notificação 10 minutos antes da expiração
+- ✅ **Renovação de Sessão**: Botão para renovar sem logout
+- ✅ **Página Funcionário Especial**: Permanece ativa mesmo com sessão expirada
+- ✅ **Logs de Auditoria**: Registra todas as verificações
+
+### **Benefícios**
+- **Não perde trabalho**: Usuário não é redirecionado inesperadamente
+- **Mais seguro**: Timeout de 4 horas em vez de 8
+- **Melhor UX**: Avisos elegantes e não intrusivos
+- **Controle manual**: Botão para verificar sessão quando necessário
 
 ## 🎯 Cálculos de Ponto
 
@@ -162,6 +215,7 @@ function gerarRelatorioCompleto($usuario, $pontos, $dataInicio, $dataFim)
 - **Prepared statements**: Proteção SQL Injection
 - **Sessões seguras**: Controle de acesso
 - **Logs de auditoria**: Todas as ações registradas
+- **Sistema inteligente**: Verificação baseada em atividade
 
 ### **Logs de Auditoria:**
 - **Login/logout** de usuários
@@ -169,12 +223,13 @@ function gerarRelatorioCompleto($usuario, $pontos, $dataInicio, $dataFim)
 - **Alterações** de configurações
 - **Ações administrativas**
 - **Tentativas de acesso** não autorizado
+- **Verificações de sessão** inteligentes
 
 ## 🚀 Comandos de Uso
 
 ### **Iniciar Sistema:**
 ```bash
-php -S localhost:8000 -t frontend
+php -S localhost:8000 -t .
 ```
 
 ### **Backup do Banco:**
@@ -190,6 +245,19 @@ copy backup_20250917.db backend\data\techponto.db
 ### **Verificar Sintaxe PHP:**
 ```bash
 php -l backend\api\admin.php
+```
+
+### **Sistema de Atualizações:**
+```bash
+# Configurar repositório
+git remote add origin https://github.com/seuusuario/ceavicponto.git
+
+# Criar nova versão
+git add .
+git commit -m "Nova funcionalidade v2.0.1"
+git push origin master
+
+# Criar release no GitHub (via interface web)
 ```
 
 ## 📈 Métricas de Performance
@@ -212,15 +280,18 @@ php -l backend\api\admin.php
 ### **Logs do Sistema:**
 - **Auditoria**: `backend/logs/audit.log`
 - **Erros**: `backend/logs/error.log`
+- **Atualizações**: `backend/updates/logs/`
 - **Acesso**: Logs do servidor PHP
 
 ### **Backup Recomendado:**
 - **Banco de dados**: `backend/data/techponto.db`
 - **Configurações**: `backend/config/`
 - **Logs**: `backend/logs/`
+- **Backups automáticos**: `backend/updates/backups/`
 
 ### **Atualizações:**
-- **Código**: Substituir arquivos
+- **Automáticas**: Via sistema de atualizações
+- **Manuais**: Substituir arquivos
 - **Banco**: Executar migrações
 - **Configurações**: Manter backups
 
@@ -246,21 +317,37 @@ php -l backend\api\admin.php
 - Confirmar instalação do PHP
 - Verificar permissões de diretório
 
+### **Sistema de Atualizações:**
+- Verificar conectividade com GitHub
+- Confirmar configuração do repositório
+- Verificar logs em `backend/updates/logs/`
+- Restaurar backup se necessário
+
 ## 📞 Suporte
 
 ### **Em caso de problemas:**
-1. **Verificar logs**: `backend/logs/`
+1. **Verificar logs**: `backend/logs/` e `backend/updates/logs/`
 2. **Testar sintaxe**: `php -l arquivo.php`
 3. **Reiniciar servidor**: Parar e iniciar novamente
 4. **Restaurar backup**: Se disponível
+5. **Verificar sistema de atualizações**: Logs e configurações
 
 ### **Informações do Sistema:**
 - **Versão PHP**: 8.2+
 - **Banco**: SQLite 3
 - **Arquitetura**: PHP Puro (unificada)
-- **Última atualização**: 17/09/2025
+- **Sistema de Atualizações**: GitHub
+- **Última atualização**: 24/09/2025
 
 ## 🎉 Histórico de Versões
+
+### **v2.0.1 - Sistema de Atualizações (24/09/2025)**
+- ✅ **Sistema de atualizações** via GitHub
+- ✅ **Backup automático** antes de atualizações
+- ✅ **Rollback automático** em caso de erro
+- ✅ **Verificação de integridade** de arquivos
+- ✅ **Logs completos** de operações
+- ✅ **Interface admin** para gerenciar atualizações
 
 ### **v2.0 - Unificação PHP (17/09/2025)**
 - ✅ **Unificação completa** em PHP
@@ -268,6 +355,7 @@ php -l backend\api\admin.php
 - ✅ **Simplificação** da arquitetura
 - ✅ **Otimização** de recursos
 - ✅ **Performance** melhorada
+- ✅ **Sistema inteligente** de sessão
 
 ### **v1.0 - Sistema Híbrido**
 - ✅ **Controle de ponto** básico
@@ -279,7 +367,7 @@ php -l backend\api\admin.php
 
 ## 🏆 Conclusão
 
-**Tech-Ponto v2.0** é um sistema completo, moderno e eficiente para controle de ponto eletrônico, ideal para pequenas e médias empresas que precisam de uma solução local, segura e fácil de manter.
+**Tech-Ponto v2.0.1** é um sistema completo, moderno e eficiente para controle de ponto eletrônico, ideal para pequenas e médias empresas que precisam de uma solução local, segura e fácil de manter.
 
 **Características principais:**
 - 🚀 **Performance otimizada** (6x mais leve)
@@ -287,6 +375,8 @@ php -l backend\api\admin.php
 - 🛡️ **Segurança robusta** (auditoria completa)
 - 📊 **Relatórios profissionais** (cartão de ponto)
 - ⚡ **Deploy instantâneo** (1 comando)
+- 🔄 **Atualizações automáticas** (via GitHub)
+- 🧠 **Sistema inteligente** (verificação de sessão)
 
 **Sistema pronto para produção!** ✅
 
