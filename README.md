@@ -341,7 +341,7 @@ git push origin master
 
 ## 🎉 Histórico de Versões
 
-### **v2.0.1 - Sistema de Atualizações (24/09/2025)**
+### **v1.0.0 - Sistema de Atualizações (24/09/2025)**
 - ✅ **Sistema de atualizações** via GitHub
 - ✅ **Backup automático** antes de atualizações
 - ✅ **Rollback automático** em caso de erro
@@ -349,7 +349,7 @@ git push origin master
 - ✅ **Logs completos** de operações
 - ✅ **Interface admin** para gerenciar atualizações
 
-### **v2.0 - Unificação PHP (17/09/2025)**
+### **v0.9 - Unificação PHP (17/09/2025)**
 - ✅ **Unificação completa** em PHP
 - ✅ **Remoção** de código Python
 - ✅ **Simplificação** da arquitetura
@@ -357,7 +357,7 @@ git push origin master
 - ✅ **Performance** melhorada
 - ✅ **Sistema inteligente** de sessão
 
-### **v1.0 - Sistema Híbrido**
+### **v0.1 - Sistema Híbrido**
 - ✅ **Controle de ponto** básico
 - ✅ **Interface** moderna
 - ✅ **Autenticação** segura
@@ -367,7 +367,7 @@ git push origin master
 
 ## 🏆 Conclusão
 
-**Tech-Ponto v2.0.1** é um sistema completo, moderno e eficiente para controle de ponto eletrônico, ideal para pequenas e médias empresas que precisam de uma solução local, segura e fácil de manter.
+**Tech-Ponto v1.0.0** é um sistema completo, moderno e eficiente para controle de ponto eletrônico, ideal para pequenas e médias empresas que precisam de uma solução local, segura e fácil de manter.
 
 **Características principais:**
 - 🚀 **Performance otimizada** (6x mais leve)

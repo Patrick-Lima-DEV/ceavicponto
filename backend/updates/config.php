@@ -26,7 +26,7 @@ define('GITHUB_TOKEN', '');
 // ========================================
 
 // Versão atual do sistema
-define('CURRENT_VERSION', '2.0.1');
+define('CURRENT_VERSION', '1.0.0');
 
 // Intervalo entre verificações automáticas (em segundos)
 // 86400 = 24 horas
