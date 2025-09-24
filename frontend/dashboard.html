@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Tech-Ponto</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="dashboard">
+    <header class="header">
+        <div class="header-content">
+            <div class="header-logo">
+                <i class="fas fa-clock"></i>
+                <h2>Tech-Ponto</h2>
+            </div>
+            
+            <div class="user-info">
+                <span class="user-name" id="userName">Carregando...</span>
+                <span class="user-type" id="userType">funcionário</span>
+                <button class="btn-verify-session" onclick="verificarSessaoInteligente(true)" title="Verificar Sessão">
+                    <i class="fas fa-shield-alt"></i>
+                </button>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Cards de Status -->
+        <div class="status-grid">
+            <div class="status-card today">
+                <h3>Data Atual</h3>
+                <div class="status-value" id="currentDate">--</div>
+                <small id="currentTime">--</small>
+            </div>
+            
+            <div class="status-card worked">
+                <h3>Horas Trabalhadas</h3>
+                <div class="status-value" id="horasTrabalhadasHoje">00:00</div>
+                <small>Hoje</small>
+            </div>
+            
+            <div class="status-card">
+                <h3>Horas Esperadas</h3>
+                <div class="status-value" id="horasEsperadas">08:00</div>
+                <small>Jornada Diária</small>
+            </div>
+            
+            <div class="status-card balance">
+                <h3>Saldo do Dia</h3>
+                <div class="status-value" id="saldoDia">00:00</div>
+                <small id="statusDia">Calculando...</small>
+            </div>
+        </div>
+
+        <!-- Botões de Registro -->
+        <section class="punch-section">
+            <h3>Registrar Ponto</h3>
+            <div class="punch-buttons">
+                <button class="punch-btn entrada" onclick="registrarPonto('entrada')">
+                    <i class="fas fa-play"></i>
+                    <span>Entrada</span>
+                </button>
+                
+                <button class="punch-btn almoco-saida" onclick="registrarPonto('almoco_saida')">
+                    <i class="fas fa-utensils"></i>
+                    <span>Saída Almoço</span>
+                </button>
+                
+                <button class="punch-btn almoco-volta" onclick="registrarPonto('almoco_volta')">
+                    <i class="fas fa-coffee"></i>
+                    <span>Volta Almoço</span>
+                </button>
+                
+                <button class="punch-btn saida" onclick="registrarPonto('saida')">
+                    <i class="fas fa-stop"></i>
+                    <span>Saída</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Histórico de Registros -->
+        <section class="history-section">
+            <div class="history-header">
+                <h3>Registros de Ponto</h3>
+                <div class="date-filter">
+                    <input type="date" id="dataInicio" value="">
+                    <span>até</span>
+                    <input type="date" id="dataFim" value="">
+                    <button class="btn-filter" onclick="filtrarRegistros()">
+                        <i class="fas fa-filter"></i>
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Entrada</th>
+                            <th>Saída Almoço</th>
+                            <th>Volta Almoço</th>
+                            <th>Saída</th>
+                            <th>Horas Trabalhadas</th>
+                            <th>Saldo</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 40px;">
+                                Carregando registros...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/time-calculator.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Módulo Justificativas</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste do Módulo de Justificativas</h1>
+    
+    <div class="test-section">
+        <h3>1. Teste de Conexão com API</h3>
+        <button onclick="testarConexaoAPI()">Testar Conexão</button>
+        <div id="resultadoConexao"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Teste de Tipos de Justificativa</h3>
+        <button onclick="testarTiposJustificativa()">Carregar Tipos</button>
+        <div id="resultadoTipos"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Teste de Funcionários</h3>
+        <button onclick="testarFuncionarios()">Carregar Funcionários</button>
+        <div id="resultadoFuncionarios"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Teste de Integração</h3>
+        <button onclick="testarIntegracao()">Testar Integração</button>
+        <div id="resultadoIntegracao"></div>
+    </div>
+
+    <script>
+        function mostrarResultado(elementoId, mensagem, sucesso = true) {
+            const div = document.getElementById(elementoId);
+            div.innerHTML = `<div class="result ${sucesso ? 'success' : 'error'}">${mensagem}</div>`;
+        }
+
+        async function testarConexaoAPI() {
+            mostrarResultado('resultadoConexao', 'Testando conexão com API...', true);
+            
+            try {
+                const response = await fetch('../backend/api/justificativas.php?action=tipos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarResultado('resultadoConexao', '✅ Conexão com API funcionando!', true);
+                } else {
+                    mostrarResultado('resultadoConexao', `❌ Erro na API: ${data.message}`, false);
+                }
+            } catch (error) {
+                mostrarResultado('resultadoConexao', `❌ Erro de conexão: ${error.message}`, false);
+            }
+        }
+
+        async function testarTiposJustificativa() {
+            mostrarResultado('resultadoTipos', 'Carregando tipos de justificativa...', true);
+            
+            try {
+                const response = await fetch('../backend/api/justificativas.php?action=tipos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const tipos = data.data.tipos;
+                    let html = `✅ ${tipos.length} tipos carregados:<br>`;
+                    tipos.forEach(tipo => {
+                        html += `• ${tipo.nome} (${tipo.codigo})<br>`;
+                    });
+                    mostrarResultado('resultadoTipos', html, true);
+                } else {
+                    mostrarResultado('resultadoTipos', `❌ Erro: ${data.message}`, false);
+                }
+            } catch (error) {
+                mostrarResultado('resultadoTipos', `❌ Erro: ${error.message}`, false);
+            }
+        }
+
+        async function testarFuncionarios() {
+            mostrarResultado('resultadoFuncionarios', 'Carregando funcionários...', true);
+            
+            try {
+                const response = await fetch('../backend/api/justificativas.php?action=funcionarios');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const funcionarios = data.data.funcionarios;
+                    let html = `✅ ${funcionarios.length} funcionários carregados:<br>`;
+                    funcionarios.forEach(func => {
+                        html += `• ${func.nome} (${func.matricula})<br>`;
+                    });
+                    mostrarResultado('resultadoFuncionarios', html, true);
+                } else {
+                    mostrarResultado('resultadoFuncionarios', `❌ Erro: ${data.message}`, false);
+                }
+            } catch (error) {
+                mostrarResultado('resultadoFuncionarios', `❌ Erro: ${error.message}`, false);
+            }
+        }
+
+        async function testarIntegracao() {
+            mostrarResultado('resultadoIntegracao', 'Testando integração com sistema de ponto...', true);
+            
+            try {
+                // Testar API de integração
+                const response = await fetch('../backend/api/pontos-justificativas.php?action=verificar&funcionario_id=1&data=2024-12-01&periodo=integral');
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarResultado('resultadoIntegracao', '✅ Integração funcionando! API de pontos-justificativas respondendo.', true);
+                } else {
+                    mostrarResultado('resultadoIntegracao', `⚠️ API respondeu mas com aviso: ${data.message}`, true);
+                }
+            } catch (error) {
+                mostrarResultado('resultadoIntegracao', `❌ Erro na integração: ${error.message}`, false);
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testarConexaoAPI();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

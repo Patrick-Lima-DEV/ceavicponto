@@ -1,0 +1,79 @@
+========================================
+    Tech-Ponto - Sistema de Controle de Ponto
+========================================
+
+COMO USAR (SUPER SIMPLES):
+==========================
+
+1. Execute "INICIAR.bat" 
+2. Pronto! O sistema vai:
+   - Encontrar o projeto automaticamente
+   - Instalar PHP se necessário
+   - Criar o banco de dados
+   - Iniciar o servidor
+   - Abrir o navegador automaticamente
+
+========================================
+
+USUÁRIOS PADRÃO:
+================
+👨‍💼 ADMINISTRADOR:
+   Login: admin
+   Senha: admin123
+
+👤 FUNCIONÁRIO:
+   CPF: 12345678901
+   PIN: 1234
+
+========================================
+
+ARQUIVOS DISPONÍVEIS:
+====================
+- INICIAR.bat    = Instala e inicia o sistema automaticamente
+- instalar.bat   = Apenas instala o sistema
+- iniciar.bat    = Apenas inicia o servidor
+
+========================================
+
+SOLUÇÃO DE PROBLEMAS:
+====================
+
+Se não funcionar:
+1. Execute como Administrador:
+   - Clique com botão direito em "INICIAR.bat"
+   - Selecione "Executar como administrador"
+
+2. Se pedir o caminho manualmente:
+   - Digite: C:\Users\usuar\Área de Trabalho\bkp\ceavicponto
+   - (ou onde estiver a pasta do projeto)
+
+3. Verifique se tem conexão com internet
+   (necessária para baixar PHP automaticamente)
+
+========================================
+
+REQUISITOS:
+===========
+- Windows 10/11
+- Conexão com internet (primeira vez)
+- 100MB de espaço livre
+
+========================================
+
+COMO FUNCIONA:
+==============
+1. O INICIAR.bat procura automaticamente pelo projeto
+2. Baixa e instala PHP se necessário
+3. Cria banco de dados SQLite
+4. Inicia servidor web na porta 8000
+5. Abre http://localhost:8000 no navegador
+
+========================================
+
+SUPORTE:
+========
+- Sistema desenvolvido para uso interno
+- Logs do sistema: backend\logs\
+- Banco de dados: backend\data\techponto.db
+
+========================================

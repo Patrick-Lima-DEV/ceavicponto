@@ -1,0 +1,323 @@
+/* ===== ESTILOS PARA JUSTIFICATIVAS ===== */
+
+/* Container principal de justificativas */
+.justificativas-container {
+    padding: 20px;
+}
+
+.justificativas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--light-gray);
+}
+
+.justificativas-header h3 {
+    color: var(--primary-blue);
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.header-icon {
+    margin-right: 10px;
+    color: var(--synapse-accent);
+}
+
+/* Badges para tipos de justificativa */
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-primary { background: var(--primary-blue); color: white; }
+.badge-warning { background: #f59e0b; color: white; }
+.badge-info { background: var(--synapse-accent); color: white; }
+.badge-success { background: #10b981; color: white; }
+.badge-secondary { background: #6b7280; color: white; }
+.badge-danger { background: #ef4444; color: white; }
+
+/* Botões de ação */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.btn-action {
+    padding: 6px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-info { background: var(--synapse-accent); color: white; }
+.btn-warning { background: #f59e0b; color: white; }
+.btn-danger { background: #ef4444; color: white; }
+
+/* Detalhes da justificativa */
+.justificativa-detalhes {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.detail-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-blue);
+}
+
+.detail-section h4 {
+    color: var(--primary-blue);
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.detail-item span {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.motivo-text {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.impacto-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.impacto-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.impacto-item i {
+    font-size: 16px;
+}
+
+.text-success { color: #10b981; }
+.text-danger { color: #ef4444; }
+
+/* Caixas de informação e aviso */
+.info-box, .warning-box {
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.info-box {
+    background: #dbeafe;
+    border: 1px solid #93c5fd;
+    color: #1e40af;
+}
+
+.warning-box {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+}
+
+.info-box i, .warning-box i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.warning-box ul {
+    margin: 5px 0 0 0;
+    padding-left: 20px;
+}
+
+.warning-box li {
+    margin-bottom: 3px;
+}
+
+/* Estatísticas específicas para justificativas */
+#statsJustificativas .stat-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
+    transition: all 0.3s ease;
+}
+
+#statsJustificativas .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+#statsJustificativas .stat-icon {
+    background: var(--synapse-gradient);
+    color: white;
+}
+
+/* Filtros específicos para justificativas */
+.filters-container .form-group label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.filters-container select,
+.filters-container input {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.filters-container select:focus,
+.filters-container input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Tabela de justificativas */
+#justificativasTable {
+    font-size: 14px;
+}
+
+#justificativasTable th {
+    background: var(--primary-blue);
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    padding: 12px 8px;
+}
+
+#justificativasTable td {
+    padding: 12px 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#justificativasTable tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Paginação específica para justificativas */
+#paginationJustificativas {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-pagination {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-pagination:hover:not(:disabled) {
+    background: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+}
+
+.btn-pagination:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Responsividade para justificativas */
+@media (max-width: 768px) {
+    .justificativas-container {
+        padding: 15px;
+    }
+    
+    .justificativas-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .btn-action {
+        padding: 8px;
+        font-size: 14px;
+    }
+    
+    #justificativasTable {
+        font-size: 12px;
+    }
+    
+    #justificativasTable th,
+    #justificativasTable td {
+        padding: 8px 4px;
+    }
+    
+    .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+}

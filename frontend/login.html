@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech-Ponto - Sistema de Controle de Ponto</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <i class="fas fa-clock"></i>
+                <h1>Tech-Ponto</h1>
+                <p>Sistema de Controle de Ponto Eletrônico</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="login">
+                        <i class="fas fa-user"></i>
+                        Usuário
+                    </label>
+                    <input type="text" id="login" name="login" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="senha">
+                        <i class="fas fa-lock"></i>
+                        Senha
+                    </label>
+                    <input type="password" id="senha" name="senha" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Entrar
+                </button>
+            </form>
+            
+            <div class="back-to-punch">
+                <a href="funcionario.html" class="btn-back">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar para Bater Ponto
+                </a>
+            </div>
+            
+            <div class="demo-users">
+                <h4>Área Administrativa:</h4>
+                <div class="demo-buttons">
+                    <button class="demo-btn" onclick="preencherDemo('admin', 'admin123')">
+                        <i class="fas fa-user-cog"></i>
+                        Administrador
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="version-info">
+            <p>Tech-Ponto v1.0 | © 2025</p>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>

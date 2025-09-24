@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech-Ponto - Registro de Ponto</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .logo {
+            color: #4f46e5;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .relogio-atual {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .relogio-atual i {
+            font-size: 1.2rem;
+        }
+
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .pin-input {
+            font-family: monospace;
+            font-size: 18px !important;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #d97706;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-info:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .funcionario-info {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .funcionario-nome {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 5px;
+        }
+
+        .funcionario-dept {
+            font-size: 13px;
+            color: #0369a1;
+        }
+
+        .pontos-hoje {
+            background: #fefce8;
+            border: 1px solid #eab308;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .pontos-titulo {
+            font-weight: 600;
+            color: #a16207;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .ponto-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #a16207;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .admin-btn, .clear-session {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            border-radius: 5px;
+            transition: color 0.2s;
+        }
+
+        .admin-btn:hover {
+            color: #4f46e5;
+        }
+
+        .clear-session:hover {
+            color: #ef4444;
+        }
+
+        .verify-session-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            margin-right: 8px;
+        }
+
+        .verify-session-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .definir-pin {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .definir-pin h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .definir-pin p {
+            color: #a16207;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .extras {
+            color: #1e40af;
+            font-weight: bold;
+        }
+        
+        .faltas {
+            color: #991b1b;
+            font-weight: bold;
+        }
+        
+        .normal {
+            color: #065f46;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-buttons">
+            <button class="verify-session-btn" onclick="verificarSessaoInteligente(true)" title="Verificar Sessão">
+                <i class="fas fa-shield-alt"></i>
+            </button>
+            <button class="admin-btn" onclick="window.open('login.html', '_blank')" title="Área Administrativa">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="clear-session" onclick="limparSessao()" title="Limpar sessão">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="logo">
+            <i class="fas fa-clock"></i> Tech-Ponto
+        </div>
+        <div class="subtitle">Sistema de Controle de Ponto</div>
+        
+        <div class="relogio-atual">
+            <i class="fas fa-clock"></i>
+            <div id="relogio">--:--:--</div>
+        </div>
+        
+        
+        <div class="alert alert-success" id="alertSuccess"></div>
+        <div class="alert alert-error" id="alertError"></div>
+        <div class="alert alert-info" id="alertInfo"></div>
+        
+        <!-- Seção de Definir PIN -->
+        <div class="definir-pin" id="definirPinSection">
+            <h3><i class="fas fa-key"></i> Primeiro Acesso</h3>
+            <p>Defina seu PIN de 4 dígitos para acessar o sistema:</p>
+            
+            <div class="form-group">
+                <label for="novoPin">Novo PIN (4 dígitos)</label>
+                <input type="password" id="novoPin" class="pin-input" maxlength="4" placeholder="••••">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmarPin">Confirmar PIN</label>
+                <input type="password" id="confirmarPin" class="pin-input" maxlength="4" placeholder="••••">
+            </div>
+            
+            <button class="btn btn-primary" onclick="definirPin()">
+                <span class="loading" id="loadingDefinirPin">
+                    <div class="spinner"></div>
+                </span>
+                <span id="textDefinirPin">Definir PIN</span>
+            </button>
+        </div>
+        
+        <!-- Seção de Autenticação -->
+        <div id="authSection">
+            <div class="form-group">
+                <label for="pin">PIN (4 dígitos)</label>
+                <input type="password" id="pin" class="pin-input" maxlength="4" placeholder="••••">
+            </div>
+            
+            <button class="btn btn-primary" onclick="autenticar()">
+                <span class="loading" id="loadingAuth">
+                    <div class="spinner"></div>
+                </span>
+                <span id="textAuth">Entrar</span>
+            </button>
+        </div>
+        
+        <!-- Seção de Funcionário Logado -->
+        <div id="funcionarioSection" style="display: none;">
+            <div class="funcionario-info" id="funcionarioInfo">
+                <div class="funcionario-nome" id="funcionarioNome"></div>
+                <div class="funcionario-dept" id="funcionarioDept"></div>
+            </div>
+            
+            <div class="pontos-hoje" id="pontosHoje">
+                <div class="pontos-titulo">Pontos registrados hoje:</div>
+                <div id="listaPontos"></div>
+            </div>
+            
+            <div id="botoesRelogio">
+                <button class="btn btn-success" id="btnEntrada" onclick="registrarPonto('entrada')">
+                    <i class="fas fa-sun"></i> Entrada
+                </button>
+                
+                <button class="btn btn-warning" id="btnAlmocoSaida" onclick="registrarPonto('almoco_saida')">
+                    <i class="fas fa-utensils"></i> Saída Almoço
+                </button>
+                
+                <button class="btn btn-info" id="btnAlmocoVolta" onclick="registrarPonto('almoco_volta')">
+                    <i class="fas fa-coffee"></i> Volta Almoço
+                </button>
+                
+                <button class="btn btn-danger" id="btnSaida" onclick="registrarPonto('saida')">
+                    <i class="fas fa-moon"></i> Saída
+                </button>
+            </div>
+            
+            <!-- Resumo do dia calculado em JavaScript -->
+            <div class="pontos-hoje" id="resumoDia" style="display: none;">
+                <div class="pontos-titulo">Resumo do dia:</div>
+                <div id="resumoConteudo"></div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="logout()" style="margin-top: 20px; background: #6b7280;">
+                <i class="fas fa-sign-out-alt"></i> Finalizar
+            </button>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/time-calculator.js"></script>
+    <script>
+        let funcionarioLogado = null;
+        let pontosHoje = [];
+        let jornadaInfo = {};
+        
+        
+        // Mostrar alerta
+        function mostrarAlerta(tipo, mensagem) {
+            // Esconder todos os alertas
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.display = 'none';
+            });
+            
+            // Mostrar alerta específico
+            const alerta = document.getElementById('alert' + tipo.charAt(0).toUpperCase() + tipo.slice(1));
+            if (alerta) {
+                alerta.textContent = mensagem;
+                alerta.style.display = 'block';
+                
+                // Auto-esconder após 5 segundos
+                setTimeout(() => {
+                    alerta.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Limpar sessão
+        function limparSessao() {
+            funcionarioLogado = null;
+            pontosHoje = [];
+            
+            // Limpar localStorage também
+            localStorage.removeItem('user');
+            localStorage.removeItem('login_time');
+            
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('funcionarioSection').style.display = 'none';
+            document.getElementById('definirPinSection').style.display = 'none';
+            
+            // Limpar apenas o campo PIN (identificador não existe)
+            const pinInput = document.getElementById('pin');
+            if (pinInput) {
+                pinInput.value = '';
+            }
+            
+            mostrarAlerta('info', 'Sessão limpa');
+        }
+        
+        // Definir PIN (primeiro acesso)
+        async function definirPin() {
+            const novoPin = document.getElementById('novoPin').value;
+            const confirmarPin = document.getElementById('confirmarPin').value;
+            
+            if (!novoPin || !confirmarPin) {
+                mostrarAlerta('error', 'Preencha todos os campos');
+                return;
+            }
+            
+            if (novoPin.length !== 4 || !/^\d{4}$/.test(novoPin)) {
+                mostrarAlerta('error', 'PIN deve ter exatamente 4 dígitos');
+                return;
+            }
+            
+            if (novoPin !== confirmarPin) {
+                mostrarAlerta('error', 'PINs não coincidem');
+                return;
+            }
+            
+            // Mostrar loading
+            document.getElementById('loadingDefinirPin').style.display = 'inline-block';
+            document.getElementById('textDefinirPin').style.display = 'none';
+            
+            try {
+                const response = await fetch('../backend/api/definir_pin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'definir_pin',
+                        pin: novoPin,
+                        confirmar_pin: confirmarPin
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta('success', 'PIN definido com sucesso! Faça login novamente.');
+                    
+                    // Voltar para tela de auth
+                    document.getElementById('definirPinSection').style.display = 'none';
+                    document.getElementById('authSection').style.display = 'block';
+                    
+                    // Limpar campos
+                    document.getElementById('novoPin').value = '';
+                    document.getElementById('confirmarPin').value = '';
+                } else {
+                    mostrarAlerta('error', result.message);
+                }
+                
+            } catch (error) {
+                mostrarAlerta('error', 'Erro de conexão. Tente novamente.');
+            }
+            
+            // Esconder loading
+            document.getElementById('loadingDefinirPin').style.display = 'none';
+            document.getElementById('textDefinirPin').style.display = 'inline';
+        }
+        
+        // Autenticar funcionário
+        async function autenticar() {
+            const pin = document.getElementById('pin').value.trim();
+            
+            if (!pin) {
+                mostrarAlerta('error', 'Digite seu PIN');
+                return;
+            }
+            
+            if (pin.length !== 4) {
+                mostrarAlerta('error', 'PIN deve ter 4 dígitos');
+                return;
+            }
+            
+            // Mostrar loading
+            document.getElementById('loadingAuth').style.display = 'inline-block';
+            document.getElementById('textAuth').style.display = 'none';
+            
+            try {
+                // Validar PIN sem tentar registrar ponto
+                const response = await fetch('../backend/api/validar-pin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pin: pin
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    funcionarioLogado = result.data.funcionario;
+                    
+                    // Salvar no localStorage para persistir após F5
+                    const userData = {
+                        id: funcionarioLogado.id,
+                        nome: funcionarioLogado.nome,
+                        departamento: funcionarioLogado.departamento,
+                        tipo: 'funcionario'
+                    };
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    localStorage.setItem('login_time', Date.now());
+                    
+                    mostrarAlerta('success', 'Autenticado com sucesso!');
+                    mostrarSecaoFuncionario();
+                    await buscarPontosHoje();
+                } else {
+                    // Verificar se é primeiro acesso
+                    if (result.data && result.data.pin_reset) {
+                        document.getElementById('authSection').style.display = 'none';
+                        document.getElementById('definirPinSection').style.display = 'block';
+                        mostrarAlerta('info', result.message);
+                    } else {
+                        mostrarAlerta('error', result.message);
+                    }
+                }
+                
+            } catch (error) {
+                mostrarAlerta('error', 'Erro de conexão. Tente novamente.');
+            }
+            
+            // Esconder loading
+            document.getElementById('loadingAuth').style.display = 'none';
+            document.getElementById('textAuth').style.display = 'inline';
+        }
+        
+        // Mostrar seção do funcionário logado
+        function mostrarSecaoFuncionario() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('funcionarioSection').style.display = 'block';
+            
+            document.getElementById('funcionarioNome').textContent = funcionarioLogado.nome;
+            document.getElementById('funcionarioDept').textContent = funcionarioLogado.departamento || 'Departamento não definido';
+            
+            document.getElementById('funcionarioInfo').style.display = 'block';
+        }
+        
+        // Buscar pontos do dia
+        async function buscarPontosHoje() {
+            if (!funcionarioLogado) return;
+            
+            try {
+                const hoje = new Date().toISOString().split('T')[0];
+                const response = await fetch(`../backend/api/punches.php?user_id=${funcionarioLogado.id}&date=${hoje}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    pontosHoje = result.data.pontos || [];
+                    jornadaInfo = result.data.jornada || {};
+                    atualizarBotoesPonto();
+                    mostrarPontosHoje();
+                    calcularResumoDia();
+                }
+            } catch (error) {
+                console.error('Erro ao buscar pontos:', error);
+            }
+        }
+        
+        // Mostrar pontos registrados hoje
+        function mostrarPontosHoje() {
+            const listaPontos = document.getElementById('listaPontos');
+            
+            if (pontosHoje.length === 0) {
+                document.getElementById('pontosHoje').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('pontosHoje').style.display = 'block';
+            
+            const nomesPonto = {
+                'entrada_manha': 'Entrada',
+                'saida_almoco': 'Saída Almoço',
+                'volta_almoco': 'Volta Almoço',
+                'saida_tarde': 'Saída',
+                // Fallback para tipos antigos
+                'entrada': 'Entrada',
+                'almoco_saida': 'Saída Almoço',
+                'almoco_volta': 'Volta Almoço',
+                'saida': 'Saída'
+            };
+            
+            listaPontos.innerHTML = pontosHoje.map(ponto => {
+                const horario = ponto.hora.substring(0, 5); // HH:MM
+                
+                return `<div class="ponto-item">
+                    <span>${nomesPonto[ponto.tipo] || ponto.tipo}</span>
+                    <span>${horario}</span>
+                </div>`;
+            }).join('');
+        }
+        
+        // Atualizar botões de ponto
+        function atualizarBotoesPonto() {
+            // Mapear tipos do banco para tipos do frontend
+            const mapeamentoTipos = {
+                'entrada_manha': 'entrada',
+                'saida_almoco': 'almoco_saida',
+                'volta_almoco': 'almoco_volta',
+                'saida_tarde': 'saida'
+            };
+            
+            const pontosRegistrados = pontosHoje.map(p => mapeamentoTipos[p.tipo] || p.tipo);
+            
+            // Detectar dia da semana e definir sequência apropriada
+            const hoje = new Date();
+            const diaSemana = hoje.getDay(); // 0 = domingo, 6 = sábado
+            
+            let sequencia;
+            if (diaSemana === 6) { // Sábado - meio período
+                sequencia = ['entrada', 'saida']; // Sem intervalo de almoço
+                // Esconder botões de almoço no sábado
+                document.getElementById('btnAlmocoSaida').style.display = 'none';
+                document.getElementById('btnAlmocoVolta').style.display = 'none';
+            } else if (diaSemana === 0) { // Domingo - folga
+                sequencia = []; // Nenhum botão disponível
+                // Esconder todos os botões no domingo
+                document.getElementById('btnEntrada').style.display = 'none';
+                document.getElementById('btnAlmocoSaida').style.display = 'none';
+                document.getElementById('btnAlmocoVolta').style.display = 'none';
+                document.getElementById('btnSaida').style.display = 'none';
+            } else { // Segunda a sexta - período completo
+                sequencia = ['entrada', 'almoco_saida', 'almoco_volta', 'saida'];
+                // Mostrar todos os botões nos dias úteis
+                document.getElementById('btnEntrada').style.display = 'inline-block';
+                document.getElementById('btnAlmocoSaida').style.display = 'inline-block';
+                document.getElementById('btnAlmocoVolta').style.display = 'inline-block';
+                document.getElementById('btnSaida').style.display = 'inline-block';
+            }
+            
+            sequencia.forEach((tipo, index) => {
+                const btn = document.getElementById('btn' + tipo.split('_').map(p => 
+                    p.charAt(0).toUpperCase() + p.slice(1)
+                ).join(''));
+                
+                // Verificar se o botão existe antes de tentar acessá-lo
+                if (!btn) {
+                    console.warn(`Botão não encontrado para o tipo: ${tipo}`);
+                    return;
+                }
+                
+                if (pontosRegistrados.includes(tipo)) {
+                    // Ponto já registrado
+                    btn.disabled = true;
+                    // Limpar texto anterior e definir novo conteúdo
+                    const iconElement = btn.querySelector('i');
+                    const icon = iconElement ? iconElement.outerHTML : '';
+                    const textoOriginal = tipo === 'entrada' ? 'Entrada' : 
+                                        tipo === 'almoco_saida' ? 'Saída Almoço' :
+                                        tipo === 'almoco_volta' ? 'Volta Almoço' : 'Saída';
+                    btn.innerHTML = `${icon} ${textoOriginal} ✓ Registrado`;
+                } else {
+                    // Verificar se pode registrar (todos os anteriores foram registrados)
+                    const podeRegistrar = sequencia.slice(0, index).every(t => pontosRegistrados.includes(t));
+                    btn.disabled = !podeRegistrar;
+                    
+                    // Restaurar texto original se não estiver registrado
+                    if (!btn.innerHTML.includes('✓ Registrado')) {
+                        const iconElement = btn.querySelector('i');
+                        const icon = iconElement ? iconElement.outerHTML : '';
+                        const textoOriginal = tipo === 'entrada' ? 'Entrada' : 
+                                            tipo === 'almoco_saida' ? 'Saída Almoço' :
+                                            tipo === 'almoco_volta' ? 'Volta Almoço' : 'Saída';
+                        btn.innerHTML = `${icon} ${textoOriginal}`;
+                    }
+                }
+            });
+        }
+        
+        // Registrar ponto
+        async function registrarPonto(tipoPonto) {
+            if (!funcionarioLogado) {
+                mostrarAlerta('error', 'Sessão expirada. Faça login novamente.');
+                limparSessao();
+                return;
+            }
+            
+            const btn = event.target;
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Registrando...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('../backend/api/punch.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pin: document.getElementById('pin').value,
+                        type: tipoPonto
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta('success', 'Ponto registrado com sucesso!');
+                    await buscarPontosHoje(); // Atualizar lista de pontos
+                } else {
+                    mostrarAlerta('error', result.message);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }
+                
+            } catch (error) {
+                mostrarAlerta('error', 'Erro de conexão. Tente novamente.');
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        }
+        
+        // Calcular resumo do dia usando time-calculator.js (unificado com admin)
+        function calcularResumoDia() {
+            if (pontosHoje.length === 0) {
+                document.getElementById('resumoDia').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('resumoDia').style.display = 'block';
+            
+            // Converter pontos para formato esperado pelo time-calculator
+            const batidasReais = pontosHoje.map(p => ({
+                tipo: p.tipo,
+                hora: p.hora + ':00' // HH:MM:SS
+            }));
+            
+            // Usar horários cadastrados
+            const horariosCadastrados = {
+                entrada_manha: jornadaInfo.entrada_manha || '08:00:00',
+                saida_almoco: jornadaInfo.saida_almoco || '12:00:00',
+                volta_almoco: jornadaInfo.volta_almoco || '13:00:00',
+                saida_tarde: jornadaInfo.saida_tarde || '18:00:00'
+            };
+            
+            // Usar time-calculator para cálculos unificados
+            const dataHoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, dataHoje);
+            const horasTrabalhadas = timeCalculator.calcularHorasTrabalhadas(batidasReais);
+            
+            // Converter saldo para formato antigo (compatibilidade)
+            const saldo = {
+                saldo: saldoJornada.saldoFormatado,
+                status: saldoJornada.status,
+                tipo: saldoJornada.tipo,
+                detalhes: {
+                    atrasos: saldoJornada.totalFaltas,
+                    extras: saldoJornada.totalExtras
+                }
+            };
+            
+            // Exibir resumo
+            const resumoConteudo = document.getElementById('resumoConteudo');
+            resumoConteudo.innerHTML = `
+                <div class="ponto-item">
+                    <span>Horas trabalhadas:</span>
+                    <span>${horasTrabalhadas}</span>
+                </div>
+                <div class="ponto-item">
+                    <span>Saldo:</span>
+                    <span class="${saldo.status}">${saldo.saldo}</span>
+                </div>
+                <div class="ponto-item">
+                    <span>Status:</span>
+                    <span>${saldo.tipo}</span>
+                </div>
+                ${saldo.detalhes ? `
+                <div class="ponto-item">
+                    <span>Atrasos:</span>
+                    <span class="faltas">-${minutosParaTempo(saldo.detalhes.atrasos)}</span>
+                </div>
+                <div class="ponto-item">
+                    <span>Extras:</span>
+                    <span class="extras">+${minutosParaTempo(saldo.detalhes.extras)}</span>
+                </div>
+                ` : ''}
+            `;
+        }
+        
+        // Calcular horas trabalhadas (algoritmo correto com atrasos e extras)
+        function calcularHorasTrabalhadas(registros) {
+            const tipos = {};
+            
+            // Organizar registros por tipo
+            registros.forEach(registro => {
+                tipos[registro.tipo] = registro.hora;
+            });
+            
+            let totalMinutos = 0;
+            
+            // Calcular período da manhã (entrada até saída para almoço)
+            if (tipos.entrada_manha && tipos.saida_almoco) {
+                totalMinutos += calcularDiferenca(tipos.entrada_manha, tipos.saida_almoco);
+            }
+            
+            // Calcular período da tarde (volta do almoço até saída)
+            if (tipos.volta_almoco && tipos.saida_tarde) {
+                totalMinutos += calcularDiferenca(tipos.volta_almoco, tipos.saida_tarde);
+            }
+            
+            // Se não tem intervalo de almoço, calcular direto
+            if (!tipos.saida_almoco && !tipos.volta_almoco && tipos.entrada_manha && tipos.saida_tarde) {
+                totalMinutos = calcularDiferenca(tipos.entrada_manha, tipos.saida_tarde);
+            }
+            
+            // Se só tem entrada, calcular até agora
+            if (tipos.entrada_manha && !tipos.saida_tarde && !tipos.saida_almoco) {
+                const agora = new Date();
+                const horaAtual = `${agora.getHours().toString().padStart(2, '0')}:${agora.getMinutes().toString().padStart(2, '0')}`;
+                totalMinutos = calcularDiferenca(tipos.entrada_manha, horaAtual);
+            }
+            
+            // Se está no meio do expediente (saiu para almoço mas não voltou)
+            if (tipos.entrada_manha && tipos.saida_almoco && !tipos.volta_almoco) {
+                totalMinutos = calcularDiferenca(tipos.entrada_manha, tipos.saida_almoco);
+            }
+            
+            // Se voltou do almoço mas não saiu
+            if (tipos.entrada_manha && tipos.saida_almoco && tipos.volta_almoco && !tipos.saida_tarde) {
+                const agora = new Date();
+                const horaAtual = `${agora.getHours().toString().padStart(2, '0')}:${agora.getMinutes().toString().padStart(2, '0')}`;
+                
+                totalMinutos = calcularDiferenca(tipos.entrada_manha, tipos.saida_almoco) + 
+                              calcularDiferenca(tipos.volta_almoco, horaAtual);
+            }
+            
+            return minutosParaTempo(totalMinutos);
+        }
+        
+        // Calcular diferença entre dois horários
+        function calcularDiferenca(horaInicio, horaFim) {
+            const inicioMinutos = tempoParaMinutos(horaInicio);
+            const fimMinutos = tempoParaMinutos(horaFim);
+            
+            let diferenca = fimMinutos - inicioMinutos;
+            
+            // Se a hora final for menor que a inicial (passou da meia-noite)
+            if (diferenca < 0) {
+                diferenca += 24 * 60; // Adicionar 24 horas em minutos
+            }
+            
+            return diferenca;
+        }
+        
+        // Converter string de tempo para minutos
+        function tempoParaMinutos(timeString) {
+            if (!timeString || timeString === '--') return 0;
+            const parts = timeString.split(':');
+            const hours = parseInt(parts[0]);
+            const minutes = parseInt(parts[1]);
+            const seconds = parts[2] ? parseInt(parts[2]) : 0;
+            
+            // Converter segundos para minutos (arredondando)
+            const totalMinutes = hours * 60 + minutes + Math.round(seconds / 60);
+            return totalMinutes;
+        }
+        
+        // Converter minutos para string de tempo
+        function minutosParaTempo(totalMinutos) {
+            if (totalMinutos < 0) {
+                return '-' + minutosParaTempo(Math.abs(totalMinutos));
+            }
+            
+            const hours = Math.floor(totalMinutos / 60);
+            const minutes = Math.floor(totalMinutos % 60);
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        // Calcular saldo usando a mesma lógica do time-calculator.js (unificado)
+        function calcularSaldo(horasTrabalhadasStr, cargaDiariaMinutos, toleranciaMinutos, registros, jornadaInfo) {
+            // Usar o time-calculator.js para garantir consistência com o resto do sistema
+            if (typeof timeCalculator !== 'undefined') {
+                // Preparar batidas reais no formato esperado pelo time-calculator
+                const batidasReais = registros.map(registro => ({
+                    tipo: registro.tipo,
+                    hora: registro.hora + ':00' // Adicionar segundos
+                }));
+                
+                // Preparar horários cadastrados
+                const horariosCadastrados = {
+                    entrada_manha: jornadaInfo.entrada_manha || '08:00:00',
+                    saida_almoco: jornadaInfo.saida_almoco || '12:00:00',
+                    volta_almoco: jornadaInfo.volta_almoco || '13:00:00',
+                    saida_tarde: jornadaInfo.saida_tarde || '18:00:00'
+                };
+                
+                // Usar o time-calculator para calcular saldo (mesma lógica do backend)
+                const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados);
+                
+                // Sempre retornar o saldo real, mas marcar status baseado na tolerância
+                const saldoAbsoluto = Math.abs(saldoJornada.saldoFinal);
+                let status = saldoJornada.status;
+                
+                // Se estiver dentro da tolerância, marcar como normal
+                if (saldoAbsoluto <= toleranciaMinutos) {
+                    status = 'normal';
+                }
+                
+                return {
+                    saldo: saldoJornada.saldoFormatado,
+                    status: status,
+                    tipo: saldoJornada.tipo,
+                    detalhes: {
+                        atrasos: 0, // Não usado mais - lógica unificada
+                        extras: saldoJornada.totalExtras,
+                        saldo: saldoJornada.saldoFinal
+                    }
+                };
+            }
+            
+            // Fallback: cálculo simples baseado na diferença de horas (mesma lógica do backend)
+            const horasTrabalhadasMinutos = tempoParaMinutos(horasTrabalhadasStr);
+            const diferenca = horasTrabalhadasMinutos - cargaDiariaMinutos;
+            const saldoAbsoluto = Math.abs(diferenca);
+            
+            const saldoStr = minutosParaTempo(saldoAbsoluto);
+            let status = 'extras';
+            let tipo = 'horas extras';
+            
+            if (diferenca > 0) {
+                status = 'extras';
+                tipo = 'horas extras';
+            } else if (diferenca < 0) {
+                status = 'faltas';
+                tipo = 'horas em falta';
+            } else {
+                status = 'normal';
+                tipo = 'normal';
+            }
+            
+            // Se estiver dentro da tolerância, marcar como normal
+            if (saldoAbsoluto <= toleranciaMinutos) {
+                status = 'normal';
+            }
+            
+            if (diferenca > 0) {
+                return {
+                    saldo: '+' + saldoStr,
+                    status: status,
+                    tipo: tipo,
+                    detalhes: {
+                        atrasos: 0,
+                        extras: diferenca,
+                        saldo: diferenca
+                    }
+                };
+            } else if (diferenca < 0) {
+                return {
+                    saldo: '-' + saldoStr,
+                    status: status,
+                    tipo: tipo,
+                    detalhes: {
+                        atrasos: 0,
+                        extras: 0,
+                        saldo: diferenca
+                    }
+                };
+            } else {
+                return {
+                    saldo: '00:00',
+                    status: status,
+                    tipo: tipo,
+                    detalhes: {
+                        atrasos: 0,
+                        extras: 0,
+                        saldo: diferenca
+                    }
+                };
+            }
+        }
+        
+        // Logout
+        function logout() {
+            limparSessao();
+        }
+        
+        
+        
+        
+        // Função para atualizar o relógio principal
+        function atualizarRelogioPrincipal() {
+            try {
+                const agora = new Date();
+                const horas = agora.getHours().toString().padStart(2, '0');
+                const minutos = agora.getMinutes().toString().padStart(2, '0');
+                const segundos = agora.getSeconds().toString().padStart(2, '0');
+                
+                // Formatar data
+                const data = agora.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                const elementoRelogio = document.getElementById('relogio');
+                if (elementoRelogio) {
+                    elementoRelogio.innerHTML = `
+                        <div style="font-size: 1.5rem; font-weight: 600;">${horas}:${minutos}:${segundos}</div>
+                        <div style="font-size: 0.9rem; margin-top: 5px; opacity: 0.8;">${data}</div>
+                    `;
+                } else {
+                    console.error('Elemento relogio não encontrado');
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar relógio:', error);
+            }
+        }
+
+        // Inicialização completa quando DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('DOM carregado, iniciando sistema...');
+            
+            // Verificar se há usuário autenticado (funcionário) - sem redirecionar
+            try {
+                const user = localStorage.getItem('user');
+                const loginTime = localStorage.getItem('login_time');
+                
+                if (user && loginTime) {
+                    // Verificar se login não expirou (4 horas - integrado com sistema inteligente)
+                    const tempoExpiracao = 4 * 60 * 60 * 1000; // 4 horas em millisegundos
+                    if (Date.now() - parseInt(loginTime) <= tempoExpiracao) {
+                        try {
+                            const userData = JSON.parse(user);
+                            if (userData.tipo === 'funcionario') {
+                                // Se há funcionário logado, exibir diretamente seus dados
+                                console.log('Funcionário já autenticado:', userData.nome);
+                                funcionarioLogado = {
+                                    id: userData.id,
+                                    nome: userData.nome,
+                                    departamento: userData.departamento
+                                };
+                                mostrarSecaoFuncionario();
+                                await buscarPontosHoje();
+                            }
+                        } catch (error) {
+                            console.log('Erro ao parsear dados do usuário:', error);
+                        }
+                    } else {
+                        // Login expirado, usar sistema inteligente de aviso
+                        console.log('[FUNCIONARIO] Sessão expirada - usando sistema inteligente');
+                        // Não limpar localStorage imediatamente - deixar sistema inteligente gerenciar
+                    }
+                }
+            } catch (error) {
+                console.log('Erro ao verificar autenticação:', error);
+            }
+            
+            // Inicializar relógio
+            atualizarRelogioPrincipal();
+            setInterval(atualizarRelogioPrincipal, 1000);
+            console.log('Relógio inicializado');
+            
+            // Auto-focus no campo PIN
+            const pinInput = document.getElementById('pin');
+            if (pinInput) {
+                pinInput.focus();
+                
+                // Event listener para Enter no PIN
+                pinInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        autenticar();
+                    }
+                });
+            }
+            
+            // Event listeners para definir PIN
+            const novoPinInput = document.getElementById('novoPin');
+            const confirmarPinInput = document.getElementById('confirmarPin');
+            
+            if (novoPinInput) {
+                novoPinInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        if (confirmarPinInput) {
+                            confirmarPinInput.focus();
+                        }
+                    }
+                });
+            }
+            
+            if (confirmarPinInput) {
+                confirmarPinInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        definirPin();
+                    }
+                });
+            }
+            
+            console.log('Sistema inicializado com sucesso');
+            
+            // Integrar com sistema inteligente de verificação de sessão
+            console.log('[FUNCIONARIO] Integrando com sistema inteligente de verificação');
+            
+            // Verificação inicial da sessão usando sistema inteligente (opcional)
+            if (typeof verificarSessaoInteligente === 'function') {
+                verificarSessaoInteligente(true).then(sessaoValida => {
+                    if (!sessaoValida) {
+                        console.log('[FUNCIONARIO] Sessão inválida - mantendo página ativa para bater ponto');
+                        // Manter página ativa mesmo sem sessão
+                        // Funcionário pode continuar batendo ponto
+                    }
+                }).catch(error => {
+                    console.log('[FUNCIONARIO] Erro na verificação de sessão - mantendo página ativa:', error);
+                    // Em caso de erro, manter página ativa
+                });
+            }
+        });
+    </script>
+</body>
+</html>

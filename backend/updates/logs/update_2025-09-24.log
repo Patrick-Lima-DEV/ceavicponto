@@ -1,0 +1,6 @@
+[2025-09-24 21:09:28] [ERROR] [CONFIG_VALIDATION] Erros de configuração: Arquivo crítico não encontrado: backend/data/techponto.db, Arquivo crítico não encontrado: backend/config/config.php, Arquivo crítico não encontrado: backend/config/database.php, Arquivo crítico não encontrado: backend/config/security.php, Arquivo crítico não encontrado: backend/updates/config.php
+[2025-09-24 16:09:28] [INFO] [UPDATE_CHECKER] Inicializado
+[2025-09-24 21:09:34] [ERROR] [CONFIG_VALIDATION] Erros de configuração: Arquivo crítico não encontrado: backend/data/techponto.db, Arquivo crítico não encontrado: backend/config/config.php, Arquivo crítico não encontrado: backend/config/database.php, Arquivo crítico não encontrado: backend/config/security.php, Arquivo crítico não encontrado: backend/updates/config.php
+[2025-09-24 16:09:34] [INFO] [UPDATE_CHECKER] Inicializado
+[2025-09-24 16:09:34] [INFO] [UPDATE_CHECKER] Iniciando verificação de atualizações
+[2025-09-24 16:09:35] [ERROR] [UPDATE_CHECKER] Erro na verificação: Falha ao conectar com a API do GitHub
