@@ -11,7 +11,7 @@
 // ========================================
 
 // Seu usuário GitHub (ALTERE AQUI)
-define('GITHUB_REPO_OWNER', 'seuusuario');
+define('GITHUB_REPO_OWNER', 'Patrick-Lima-DEV');
 
 // Nome do repositório (ALTERE AQUI)
 define('GITHUB_REPO_NAME', 'ceavicponto');
