@@ -6,8 +6,8 @@
  * Este arquivo gerencia backups automáticos antes de atualizações
  */
 
-require_once __DIR__ . '/config.php';
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/config.php';
 
 class BackupManager {
     private $backupPath;

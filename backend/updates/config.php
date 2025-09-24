@@ -26,7 +26,7 @@ define('GITHUB_TOKEN', '');
 // ========================================
 
 // Versão atual do sistema
-define('CURRENT_VERSION', '2.0.0');
+define('CURRENT_VERSION', '2.0.1');
 
 // Intervalo entre verificações automáticas (em segundos)
 // 86400 = 24 horas
@@ -159,4 +159,102 @@ IMPORTANTE:
 - Monitore os logs de atualização
 - Use tokens GitHub com permissões mínimas necessárias
 */
+
+/**
+ * Função para obter configuração
+ */
+function getUpdateConfig($key, $default = null) {
+    $config = [
+        'github_repo_owner' => GITHUB_REPO_OWNER,
+        'github_repo_name' => GITHUB_REPO_NAME,
+        'github_token' => GITHUB_TOKEN,
+        'current_version' => CURRENT_VERSION,
+        'update_check_interval' => UPDATE_CHECK_INTERVAL,
+        'max_backup_files' => MAX_BACKUP_FILES,
+        'update_timeout' => UPDATE_TIMEOUT,
+        'enable_auto_update' => ENABLE_AUTO_UPDATE,
+        'require_admin_confirmation' => REQUIRE_ADMIN_CONFIRMATION,
+        'enable_rollback' => ENABLE_ROLLBACK,
+        'critical_files' => CRITICAL_FILES,
+        'critical_directories' => CRITICAL_DIRECTORIES
+    ];
+    
+    return isset($config[$key]) ? $config[$key] : $default;
+}
+
+/**
+ * Função para log de operações
+ */
+function logUpdateOperation($operation, $message, $level = 'INFO') {
+    if (!LOG_UPDATE_ATTEMPTS && $level === 'INFO') return;
+    if (!LOG_UPDATE_SUCCESS && $level === 'SUCCESS') return;
+    if (!LOG_UPDATE_ERRORS && $level === 'ERROR') return;
+    
+    $logFile = dirname(__DIR__) . '/updates/logs/update_' . date('Y-m-d') . '.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[{$timestamp}] [{$level}] [{$operation}] {$message}" . PHP_EOL;
+    
+    file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * Função para limpar logs antigos
+ */
+function cleanOldLogs() {
+    $logFiles = glob(dirname(__DIR__) . '/updates/logs/update_*.log');
+    $maxAge = 30 * 24 * 60 * 60; // 30 dias
+    
+    foreach ($logFiles as $logFile) {
+        if (filemtime($logFile) < (time() - $maxAge)) {
+            unlink($logFile);
+        }
+    }
+}
+
+/**
+ * Função para validar configurações
+ */
+function validateUpdateConfig() {
+    $errors = [];
+    
+    // Verificar se os diretórios existem
+    $backupPath = dirname(__DIR__) . '/updates/backups/';
+    $tempPath = dirname(__DIR__) . '/updates/temp/';
+    $logPath = dirname(__DIR__) . '/updates/logs/';
+    
+    if (!is_dir($backupPath)) {
+        $errors[] = "Diretório de backup não existe: " . $backupPath;
+    }
+    
+    if (!is_dir($tempPath)) {
+        $errors[] = "Diretório temporário não existe: " . $tempPath;
+    }
+    
+    if (!is_dir($logPath)) {
+        $errors[] = "Diretório de logs não existe: " . $logPath;
+    }
+    
+    // Verificar permissões de escrita
+    if (!is_writable($backupPath)) {
+        $errors[] = "Sem permissão de escrita no diretório de backup";
+    }
+    
+    if (!is_writable($tempPath)) {
+        $errors[] = "Sem permissão de escrita no diretório temporário";
+    }
+    
+    if (!is_writable($logPath)) {
+        $errors[] = "Sem permissão de escrita no diretório de logs";
+    }
+    
+    // Verificar se arquivos críticos existem
+    foreach (CRITICAL_FILES as $file) {
+        $fullPath = dirname(__DIR__) . '/' . $file;
+        if (!file_exists($fullPath)) {
+            $errors[] = "Arquivo crítico não encontrado: " . $file;
+        }
+    }
+    
+    return $errors;
+}
 ?>

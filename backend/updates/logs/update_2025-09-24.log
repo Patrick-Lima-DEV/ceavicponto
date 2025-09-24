@@ -4,3 +4,7 @@
 [2025-09-24 16:09:34] [INFO] [UPDATE_CHECKER] Inicializado
 [2025-09-24 16:09:34] [INFO] [UPDATE_CHECKER] Iniciando verificação de atualizações
 [2025-09-24 16:09:35] [ERROR] [UPDATE_CHECKER] Erro na verificação: Falha ao conectar com a API do GitHub
+[2025-09-24 16:54:18] [INFO] [UPDATE_CHECKER] Inicializado
+[2025-09-24 16:54:31] [INFO] [UPDATE_CHECKER] Inicializado
+[2025-09-24 16:54:31] [INFO] [UPDATE_CHECKER] Iniciando verificação de atualizações
+[2025-09-24 16:54:32] [SUCCESS] [UPDATE_CHECKER] Sistema atualizado

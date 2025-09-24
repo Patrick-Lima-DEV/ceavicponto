@@ -6,9 +6,9 @@
  * Este arquivo gerencia a instalação de atualizações com rollback automático
  */
 
+require_once dirname(__DIR__) . '/config/config.php';
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/backup_manager.php';
-require_once dirname(__DIR__) . '/config/config.php';
 
 class UpdateInstaller {
     private $backupManager;

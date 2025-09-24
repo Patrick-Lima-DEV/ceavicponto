@@ -6,8 +6,8 @@
  * Este arquivo verifica se há atualizações disponíveis no GitHub
  */
 
-require_once __DIR__ . '/config.php';
 require_once dirname(__DIR__) . '/config/config.php';
+require_once __DIR__ . '/config.php';
 
 class UpdateChecker {
     private $config;
@@ -22,7 +22,7 @@ class UpdateChecker {
             'check_interval' => getUpdateConfig('update_check_interval')
         ];
         
-        $this->lastCheckFile = LOG_PATH . 'last_check.json';
+        $this->lastCheckFile = dirname(__DIR__) . '/updates/logs/last_check.json';
         
         logUpdateOperation('UPDATE_CHECKER', 'Inicializado', 'INFO');
     }
@@ -237,26 +237,28 @@ class UpdateChecker {
     }
 }
 
-// API Endpoint
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Verificar autenticação admin
-    requireAdmin();
-    
-    $force = isset($_GET['force']) && $_GET['force'] === 'true';
-    
-    $checker = new UpdateChecker();
-    $result = $checker->checkForUpdates($force);
-    
-    jsonResponse($result['success'], $result['message'], $result['data']);
-}
+// API Endpoint - só executa se for chamado diretamente
+if (basename($_SERVER['PHP_SELF']) === 'update_checker.php') {
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        // Verificar autenticação admin
+        requireAdmin();
+        
+        $force = isset($_GET['force']) && $_GET['force'] === 'true';
+        
+        $checker = new UpdateChecker();
+        $result = $checker->checkForUpdates($force);
+        
+        jsonResponse($result['success'], $result['message'], $result['data']);
+    }
 
-// Endpoint para informações do sistema
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'system_info') {
-    requireAdmin();
-    
-    $checker = new UpdateChecker();
-    $systemInfo = $checker->getSystemInfo();
-    
-    jsonResponse(true, 'Informações do sistema obtidas', $systemInfo);
+    // Endpoint para informações do sistema
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'system_info') {
+        requireAdmin();
+        
+        $checker = new UpdateChecker();
+        $systemInfo = $checker->getSystemInfo();
+        
+        jsonResponse(true, 'Informações do sistema obtidas', $systemInfo);
+    }
 }
 ?>

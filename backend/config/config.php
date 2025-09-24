@@ -28,10 +28,12 @@ define('RATE_LIMIT_WINDOW', 300); // 5 minutos
 date_default_timezone_set(TIMEZONE);
 
 // Headers de segurança
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('X-XSS-Protection: 1; mode=block');
-header('Referrer-Policy: strict-origin-when-cross-origin');
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
 
 // Headers para API (somente se necessário)
 if (!headers_sent()) {
