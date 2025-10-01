@@ -85,11 +85,21 @@ async function carregarRegistrosHoje() {
 function atualizarCalculos() {
     // Calcular horas trabalhadas
     const horasTrabalhadasStr = timeCalculator.calcularHorasTrabalhadas(registrosHoje);
-    document.getElementById('horasTrabalhadasHoje').textContent = horasTrabalhadasStr.substring(0, 5);
     
     // Calcular saldo
     const cargaDiaria = usuario.carga_diaria || '08:00:00';
-    const saldoInfo = timeCalculator.calcularSaldo(horasTrabalhadasStr, cargaDiaria, usuario.tolerancia);
+    const toleranciaMinutos = usuario.tolerancia_minutos || usuario.tolerancia || 10;
+    const saldoInfo = timeCalculator.calcularSaldo(horasTrabalhadasStr, cargaDiaria, toleranciaMinutos);
+    
+    // Aplicar tolerância às horas trabalhadas se necessário
+    let horasTrabalhadasFinal = horasTrabalhadasStr;
+    if (saldoInfo.saldoBruto > 0 && saldoInfo.status === 'normal') {
+        // Se funcionário trabalhou mais que o esperado e está dentro da tolerância,
+        // mostrar apenas a carga diária (8:00)
+        horasTrabalhadasFinal = '08:00';
+    }
+    
+    document.getElementById('horasTrabalhadasHoje').textContent = horasTrabalhadasFinal.substring(0, 5);
     
     const saldoElement = document.getElementById('saldoDia');
     const statusElement = document.getElementById('statusDia');
@@ -224,7 +234,7 @@ function exibirHistorico(estatisticas) {
     if (!estatisticas || estatisticas.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">
+                <td colspan="9" style="text-align: center; padding: 40px; color: #6b7280;">
                     Nenhum registro encontrado para o período selecionado
                 </td>
             </tr>
@@ -237,19 +247,37 @@ function exibirHistorico(estatisticas) {
         const tipos = {};
         registros.forEach(reg => tipos[reg.tipo] = reg.hora);
         
+        // ✅ ADICIONAR: Detalhes de ajuste
+        let detalhesAjuste = '--';
+        if (stat.tem_ajustes && stat.detalhes_ajustes && stat.detalhes_ajustes.length > 0) {
+            detalhesAjuste = stat.detalhes_ajustes.map(ajuste => {
+                const tipoFormatado = ajuste.tipo.replace('_', ' ').toUpperCase();
+                const motivoFormatado = ajuste.motivo_ajuste.replace('_', ' ');
+                const tempoAjuste = ajuste.tempo_ajustado_minutos > 0 ? `+${ajuste.tempo_ajustado_minutos}min` : '';
+                
+                return `<div style="font-size: 0.8rem; margin-bottom: 2px;">
+                    <i class="fas fa-edit" style="color: #f59e0b; margin-right: 3px;"></i>
+                    <strong>${tipoFormatado}:</strong> ${ajuste.editado_por_nome} (${motivoFormatado}) ${tempoAjuste}
+                </div>`;
+            }).join('');
+        }
+        
         return `
             <tr>
                 <td>${timeCalculator.formatarData(stat.data)}</td>
-                <td>${tipos.entrada || '--'}</td>
-                <td>${tipos.almoco_saida || '--'}</td>
-                <td>${tipos.almoco_volta || '--'}</td>
-                <td>${tipos.saida || '--'}</td>
+                <td>${tipos.entrada_manha || '--'}</td>
+                <td>${tipos.saida_almoco || '--'}</td>
+                <td>${tipos.volta_almoco || '--'}</td>
+                <td>${tipos.saida_tarde || '--'}</td>
                 <td>${stat.horas_trabalhadas ? stat.horas_trabalhadas.substring(0, 5) : '00:00'}</td>
                 <td class="${stat.status}">${stat.saldo || '00:00'}</td>
                 <td>
                     <span class="status-badge ${stat.completo ? 'completo' : 'incompleto'}">
                         ${stat.completo ? 'Completo' : 'Incompleto'}
                     </span>
+                </td>
+                <td style="font-size: 0.8rem; color: #6b7280;">
+                    ${detalhesAjuste}
                 </td>
             </tr>
         `;

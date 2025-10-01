@@ -1,5 +1,6 @@
 <?php
 require_once '../config/config.php';
+require_once '../utils/time_utils.php';
 
 requireAdmin();
 
@@ -478,12 +479,12 @@ function calcularPreviewJornada($grupo) {
         'carga_diaria_formatada' => sprintf('%02d:%02d', $carga_horas, $carga_minutos),
         'carga_semanal_formatada' => sprintf('%02d:%02d', $carga_semanal_horas, $carga_semanal_minutos),
         'carga_sabado_formatada' => $carga_sabado_formatada,
-        'entrada_manha' => substr($grupo['entrada_manha'], 0, 5),
-        'saida_almoco' => substr($grupo['saida_almoco'], 0, 5),
-        'volta_almoco' => substr($grupo['volta_almoco'], 0, 5),
-        'saida_tarde' => substr($grupo['saida_tarde'], 0, 5),
-        'entrada_sabado' => isset($grupo['entrada_sabado']) ? substr($grupo['entrada_sabado'], 0, 5) : '',
-        'saida_sabado' => isset($grupo['saida_sabado']) ? substr($grupo['saida_sabado'], 0, 5) : '',
+        'entrada_manha' => arredondarHorario($grupo['entrada_manha']),
+        'saida_almoco' => arredondarHorario($grupo['saida_almoco']),
+        'volta_almoco' => arredondarHorario($grupo['volta_almoco']),
+        'saida_tarde' => arredondarHorario($grupo['saida_tarde']),
+        'entrada_sabado' => isset($grupo['entrada_sabado']) ? arredondarHorario($grupo['entrada_sabado']) : '',
+        'saida_sabado' => isset($grupo['saida_sabado']) ? arredondarHorario($grupo['saida_sabado']) : '',
         'tolerancia_formatada' => $grupo['tolerancia_minutos'] . ' min',
         'sabado_ativo' => $grupo['sabado_ativo'] ?? 0,
         'domingo_folga' => $grupo['domingo_folga'] ?? 1

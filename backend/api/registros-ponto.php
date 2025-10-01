@@ -357,12 +357,25 @@ function inserirRegistro($input) {
     // Validar dados obrigatórios
     $funcionario_id = (int) ($input['funcionario_id'] ?? 0);
     $data = $security->sanitizeInput($input['data'] ?? '');
-    $hora = $security->sanitizeInput($input['hora'] ?? '');
+    // ✅ CORRIGIDO: Não sanitizar hora (apenas trim), pois sanitizeInput remove ':' 
+    $hora = trim($input['hora'] ?? '');
     $tipo = $security->sanitizeInput($input['tipo'] ?? '');
     $observacao = $security->sanitizeInput($input['observacao'] ?? '');
     
     if (!$funcionario_id || !$data || !$hora || !$tipo) {
         jsonResponse(false, 'Funcionário, data, hora e tipo são obrigatórios');
+    }
+    
+    // ✅ NORMALIZAR: Aceitar HH:MM ou HH:MM:SS e converter para HH:MM:SS
+    if (preg_match('/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/', $hora)) {
+        // Formato HH:MM → adicionar :00 para segundos
+        $hora = $hora . ':00';
+    } elseif (preg_match('/^([0-1]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$/', $hora)) {
+        // Formato HH:MM:SS → já está correto
+        // Não fazer nada
+    } else {
+        // Formato inválido
+        jsonResponse(false, 'Formato de hora inválido. Use HH:MM (ex: 18:00) ou HH:MM:SS (ex: 18:00:00). Recebido: ' . $hora);
     }
     
     // Mapear e validar tipo
@@ -374,7 +387,7 @@ function inserirRegistro($input) {
     ];
     
     if (!isset($mapeamento_tipos_api[$tipo])) {
-        jsonResponse(false, 'Tipo de registro inválido');
+        jsonResponse(false, 'Tipo de registro inválido: ' . $tipo);
     }
     
     $tipo_db = $mapeamento_tipos_api[$tipo];
@@ -394,12 +407,7 @@ function inserirRegistro($input) {
     $stmt->execute([$funcionario_id, $data, $tipo_db]);
     
     if ($stmt->fetchColumn() > 0) {
-        jsonResponse(false, 'Já existe um registro deste tipo para esta data');
-    }
-    
-    // Validar formato da hora
-    if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $hora)) {
-        jsonResponse(false, 'Formato de hora inválido (use HH:MM:SS)');
+        jsonResponse(false, 'Já existe um registro deste tipo para esta data. Use a opção "Editar" para modificar.');
     }
     
     // Inserir registro
@@ -457,11 +465,23 @@ function handlePut($input) {
         jsonResponse(false, 'Registro não encontrado', null, 404);
     }
     
-    // Preparar dados para atualização
-    $nova_hora = $security->sanitizeInput($input['hora'] ?? $registro_atual['hora']);
+    // ✅ CORRIGIDO: Preparar dados sem sanitizar hora
+    $nova_hora = trim($input['hora'] ?? $registro_atual['hora']);
     $nova_observacao = $security->sanitizeInput($input['observacao'] ?? $registro_atual['observacao']);
     $justificativa = $security->sanitizeInput($input['justificativa'] ?? '');
     $motivo_ajuste = $security->sanitizeInput($input['motivo_ajuste'] ?? '');
+    
+    // ✅ NORMALIZAR: Aceitar HH:MM ou HH:MM:SS e converter para HH:MM:SS
+    if (preg_match('/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/', $nova_hora)) {
+        // Formato HH:MM → adicionar :00 para segundos
+        $nova_hora = $nova_hora . ':00';
+    } elseif (preg_match('/^([0-1]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$/', $nova_hora)) {
+        // Formato HH:MM:SS → já está correto
+        // Não fazer nada
+    } else {
+        // Formato inválido
+        jsonResponse(false, 'Formato de hora inválido. Use HH:MM (ex: 18:00) ou HH:MM:SS (ex: 18:00:00). Recebido: ' . $nova_hora);
+    }
     
     if (empty($justificativa)) {
         jsonResponse(false, 'Justificativa é obrigatória para edição de registro');
@@ -475,11 +495,6 @@ function handlePut($input) {
     $motivos_validos = ['esquecimento', 'erro', 'problema_tecnico', 'justificativa_admin', 'outros'];
     if (!in_array($motivo_ajuste, $motivos_validos)) {
         jsonResponse(false, 'Motivo do ajuste inválido');
-    }
-    
-    // Validar formato da nova hora
-    if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $nova_hora)) {
-        jsonResponse(false, 'Formato de hora inválido (use HH:MM:SS)');
     }
     
     // Validar sequência de horários se necessário

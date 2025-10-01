@@ -58,7 +58,8 @@ function handleGet() {
                 
                 $stmt = $db->prepare("
                     SELECT u.id, u.nome, u.cpf, u.matricula, u.cargo, u.pin_reset,
-                           d.nome as departamento_nome, gj.nome as grupo_jornada_nome
+                           d.nome as departamento_nome, gj.nome as grupo_jornada_nome,
+                           gj.tolerancia_minutos, gj.carga_diaria_minutos
                     FROM usuarios u
                     LEFT JOIN departamentos d ON u.departamento_id = d.id
                     LEFT JOIN grupos_jornada gj ON u.grupo_jornada_id = gj.id
@@ -83,6 +84,7 @@ function handleGet() {
         $id = (int) $_GET['id'];
         $stmt = $db->prepare("
             SELECT u.*, d.nome as departamento_nome, gj.nome as grupo_jornada_nome,
+                   gj.tolerancia_minutos, gj.carga_diaria_minutos,
                    (SELECT COUNT(*) FROM pontos WHERE usuario_id = u.id) as total_pontos
             FROM usuarios u
             LEFT JOIN departamentos d ON u.departamento_id = d.id
@@ -127,6 +129,7 @@ function handleGet() {
             SELECT u.id, u.nome, u.cpf, u.matricula, u.login, u.tipo, u.cargo, u.ativo,
                    u.pin_reset, u.created_at, u.updated_at,
                    d.nome as departamento_nome, gj.nome as grupo_jornada_nome,
+                   gj.tolerancia_minutos, gj.carga_diaria_minutos,
                    (SELECT COUNT(*) FROM pontos WHERE usuario_id = u.id) as total_pontos
             FROM usuarios u
             LEFT JOIN departamentos d ON u.departamento_id = d.id

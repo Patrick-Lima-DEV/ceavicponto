@@ -4,21 +4,93 @@ class TimeCalculator {
         this.toleranciaMinutos = 10; // Padrão
     }
     
-    // Converter string de tempo para minutos
-    timeToMinutes(timeString) {
-        if (!timeString || timeString === '--') return 0;
+    // Arredondar horário para o minuto mais próximo (0-29s para baixo, 30-59s para cima)
+    // Lógica ajustada para corresponder aos exemplos do usuário
+    arredondarHorario(timeString) {
+        if (!timeString || timeString === '--') return timeString;
+        
         const parts = timeString.split(':');
         const hours = parseInt(parts[0]);
         const minutes = parseInt(parts[1]);
         const seconds = parts[2] ? parseInt(parts[2]) : 0;
         
-        // Converter segundos para minutos (exato, sem arredondamento)
-        const totalMinutes = hours * 60 + minutes + (seconds / 60);
+        let minutosFinais = minutes;
+        let horasFinais = hours;
+        
+        // Arredondar segundos para minutos
+        if (seconds >= 30) {
+            minutosFinais += 1;
+        }
+        
+        // Ajustar se passou de 59 minutos
+        if (minutosFinais >= 60) {
+            horasFinais += 1;
+            minutosFinais = 0;
+        }
+        
+        // Ajustar se passou de 23 horas
+        if (horasFinais >= 24) {
+            horasFinais = 0;
+        }
+        
+        return `${horasFinais.toString().padStart(2, '0')}:${minutosFinais.toString().padStart(2, '0')}`;
+    }
+    
+    // Arredondar horário com lógica mais generosa (baseada nos exemplos do usuário)
+    arredondarHorarioGeneroso(timeString) {
+        if (!timeString || timeString === '--') return timeString;
+        
+        const parts = timeString.split(':');
+        const hours = parseInt(parts[0]);
+        const minutes = parseInt(parts[1]);
+        const seconds = parts[2] ? parseInt(parts[2]) : 0;
+        
+        let minutosFinais = minutes;
+        let horasFinais = hours;
+        
+        // Lógica mais generosa: arredondar para cima quando segundos >= 17
+        // Isso corresponde exatamente aos exemplos do usuário
+        if (seconds >= 17) {
+            minutosFinais += 1;
+        }
+        
+        // Ajustar se passou de 59 minutos
+        if (minutosFinais >= 60) {
+            horasFinais += 1;
+            minutosFinais = 0;
+        }
+        
+        // Ajustar se passou de 23 horas
+        if (horasFinais >= 24) {
+            horasFinais = 0;
+        }
+        
+        return `${horasFinais.toString().padStart(2, '0')}:${minutosFinais.toString().padStart(2, '0')}`;
+    }
+    
+    // Converter string de tempo para minutos (com arredondamento generoso)
+    timeToMinutes(timeString) {
+        if (!timeString || timeString === '--') return 0;
+        
+        // Primeiro arredondar o horário com lógica generosa
+        const horarioArredondado = this.arredondarHorarioGeneroso(timeString);
+        
+        const parts = horarioArredondado.split(':');
+        const hours = parseInt(parts[0]);
+        const minutes = parseInt(parts[1]);
+        
+        // Converter para minutos totais (sem segundos)
+        const totalMinutes = hours * 60 + minutes;
         return totalMinutes;
     }
     
     // Converter minutos para string de tempo
     minutesToTime(totalMinutes) {
+        // Verificar se é NaN ou inválido
+        if (isNaN(totalMinutes) || totalMinutes === null || totalMinutes === undefined) {
+            return '00:00';
+        }
+        
         if (totalMinutes < 0) {
             return '-' + this.minutesToTime(Math.abs(totalMinutes));
         }
@@ -48,9 +120,12 @@ class TimeCalculator {
     calcularHorasTrabalhadas(registros) {
         const tipos = {};
         
-        // Organizar registros por tipo
+        // Organizar registros por tipo (com arredondamento generoso)
         registros.forEach(registro => {
-            tipos[registro.tipo] = registro.hora;
+            // Só processar se não for '--' ou vazio
+            if (registro.hora && registro.hora !== '--' && registro.hora !== 'null') {
+                tipos[registro.tipo] = this.arredondarHorarioGeneroso(registro.hora);
+            }
         });
         
         let totalMinutos = 0;
@@ -90,22 +165,24 @@ class TimeCalculator {
         
         // Se voltou do almoço mas não saiu
         if (entrada && saidaAlmoco && voltaAlmoco && !saida) {
-            const agora = new Date();
-            const horaAtual = `${agora.getHours().toString().padStart(2, '0')}:${agora.getMinutes().toString().padStart(2, '0')}:00`;
-            
-            totalMinutos = this.calcularDiferenca(entrada, saidaAlmoco) + 
-                          this.calcularDiferenca(voltaAlmoco, horaAtual);
+            // ✅ CORRIGIDO: Para dias passados, calcular apenas período da manhã
+            // Não calcular até "agora" pois causaria cálculo incorreto em relatórios históricos
+            totalMinutos = this.calcularDiferenca(entrada, saidaAlmoco);
+            // Nota: Volta do almoço sem saída = período incompleto (não somar tarde)
         }
         
         return this.minutesToTime(totalMinutos);
     }
     
     // Calcular saldo com base em horários cadastrados vs batidas reais
-    calcularSaldoJornada(batidasReais, horariosCadastrados, dataRegistro = null) {
+    calcularSaldoJornada(batidasReais, horariosCadastrados, dataRegistro = null, toleranciaMinutos = null) {
         const batidas = {};
         batidasReais.forEach(registro => {
-            batidas[registro.tipo] = registro.hora;
+            batidas[registro.tipo] = this.arredondarHorarioGeneroso(registro.hora);
         });
+        
+        // Usar tolerância específica se fornecida, senão usar a padrão
+        const tolerancia = toleranciaMinutos !== null ? toleranciaMinutos : this.toleranciaMinutos;
         
         // Verificar se é domingo (folga) ou sábado (meio período)
         if (dataRegistro) {
@@ -129,7 +206,7 @@ class TimeCalculator {
             if (diaSemana === 6) { // Sábado - meio período
                 // Para sábados, usar carga de 4 horas (240 min) em vez de 8 horas
                 const cargaSabadoMinutos = 240; // 4 horas
-                const toleranciaSabado = 5; // 5 minutos de tolerância para sábados
+                const toleranciaSabado = Math.min(tolerancia, 5); // Usar tolerância configurada, máximo 5min para sábados
                 
                 // Calcular horas trabalhadas apenas com entrada e saída
                 const entrada = batidas.entrada_manha || batidas.entrada;
@@ -142,10 +219,12 @@ class TimeCalculator {
                     const totalTrabalhado = saidaMin - entradaMin;
                     
                     const diferenca = totalTrabalhado - cargaSabadoMinutos;
-                    let saldoFormatado = '00:00:00';
+                    let saldoFormatado = '00:00';
                     
                     if (Math.abs(diferenca) > toleranciaSabado) {
-                        saldoFormatado = this.minutesToTime(diferenca);
+                        saldoFormatado = diferenca >= 0 ? 
+                            `+${this.minutesToTime(Math.abs(diferenca))}` : 
+                            `-${this.minutesToTime(Math.abs(diferenca))}`;
                     }
                     
                     return {
@@ -173,7 +252,7 @@ class TimeCalculator {
                     
                     return {
                         saldo: -faltaTotal,
-                        saldoFormatado: faltaTotal > 0 ? `-${this.minutesToTime(faltaTotal)}` : '00:00:00',
+                        saldoFormatado: faltaTotal > toleranciaSabado ? `-${this.minutesToTime(faltaTotal)}` : '00:00',
                         status: faltaTotal > toleranciaSabado ? 'falta' : 'normal',
                         tipo: 'sabado_incompleto',
                         totalFaltas: faltaTotal,
@@ -250,22 +329,49 @@ class TimeCalculator {
         // Calcular saldo final: extras - faltas (não subtrair atrasos separadamente)
         const saldoFinal = extrasMinutos - faltasMinutos;
         
-        return {
+        // Aplicar tolerância diária
+        const saldoAbsoluto = Math.abs(saldoFinal);
+        let saldoFormatado, status, tipo;
+        
+        if (saldoAbsoluto <= tolerancia) {
+            // Dentro da tolerância - zerar o saldo
+            saldoFormatado = '00:00';
+            status = 'normal';
+            tipo = 'dentro_da_tolerancia';
+            detalhes.push(`Saldo dentro da tolerância de ${tolerancia}min - zerado`);
+        } else {
+            // Fora da tolerância - manter saldo real
+            saldoFormatado = saldoFinal >= 0 ? `+${this.minutesToTime(Math.abs(saldoFinal))}` : `-${this.minutesToTime(Math.abs(saldoFinal))}`;
+            status = saldoFinal >= 0 ? 'extras' : 'faltas';
+            tipo = saldoFinal >= 0 ? 'extra' : 'falta';
+        }
+        
+        const resultado = {
             totalFaltas: faltasMinutos,
             totalExtras: extrasMinutos,
             saldoFinal: saldoFinal,
-            saldoFormatado: saldoFinal >= 0 ? `+${this.minutesToTime(Math.abs(saldoFinal))}` : `-${this.minutesToTime(Math.abs(saldoFinal))}`,
-            tipo: saldoFinal >= 0 ? 'extra' : 'falta',
-            status: saldoFinal >= 0 ? 'extras' : 'faltas',
-            detalhes: detalhes
+            saldoFormatado: saldoFormatado,
+            tipo: tipo,
+            status: status,
+            detalhes: detalhes,
+            toleranciaAplicada: tolerancia,
+            saldoBruto: saldoFinal // Saldo antes da aplicação da tolerância
         };
+        
+        // Se funcionário trabalhou mais que o esperado (saldo positivo) e está dentro da tolerância,
+        // sugerir que pode sair no horário padrão
+        if (saldoFinal > 0 && saldoAbsoluto <= tolerancia && horariosCadastrados.saida_tarde) {
+            resultado.sugestaoSaida = horariosCadastrados.saida_tarde;
+            resultado.podeSairAntes = true;
+            detalhes.push(`Pode sair às ${horariosCadastrados.saida_tarde} (horário padrão)`);
+        }
+        
+        return resultado;
     }
     
     // Calcular saldo (diferença entre trabalhado e esperado)
     calcularSaldo(horasTrabalhadasStr, horasEsperadasStr, toleranciaMinutos = null) {
-        if (toleranciaMinutos !== null) {
-            this.toleranciaMinutos = toleranciaMinutos;
-        }
+        const tolerancia = toleranciaMinutos !== null ? toleranciaMinutos : this.toleranciaMinutos;
         
         const trabalhadas = this.timeToMinutes(horasTrabalhadasStr);
         const esperadas = this.timeToMinutes(horasEsperadasStr);
@@ -274,12 +380,23 @@ class TimeCalculator {
         const diferencaAbsoluta = Math.abs(diferenca);
         
         // Verificar se está dentro da tolerância
-        if (diferencaAbsoluta <= this.toleranciaMinutos) {
-            return {
-                saldo: '00:00:00',
+        if (diferencaAbsoluta <= tolerancia) {
+            const resultado = {
+                saldo: '00:00',
                 status: 'normal',
-                tipo: 'dentro da tolerância'
+                tipo: 'dentro_da_tolerancia',
+                saldoBruto: diferenca,
+                toleranciaAplicada: tolerancia
             };
+            
+            // Se funcionário trabalhou mais que o esperado (diferenca positiva) e está dentro da tolerância,
+            // sugerir que pode sair no horário padrão (assumindo 18:00 como padrão)
+            if (diferenca > 0) {
+                resultado.podeSairAntes = true;
+                resultado.sugestaoSaida = '18:00'; // Horário padrão de saída
+            }
+            
+            return resultado;
         }
         
         const saldoStr = this.minutesToTime(diferencaAbsoluta);
@@ -288,13 +405,17 @@ class TimeCalculator {
             return {
                 saldo: '+' + saldoStr,
                 status: 'extras',
-                tipo: 'horas extras'
+                tipo: 'horas extras',
+                saldoBruto: diferenca,
+                toleranciaAplicada: tolerancia
             };
         } else {
             return {
                 saldo: '-' + saldoStr,
                 status: 'faltas',
-                tipo: 'horas em falta'
+                tipo: 'horas em falta',
+                saldoBruto: diferenca,
+                toleranciaAplicada: tolerancia
             };
         }
     }
@@ -343,7 +464,27 @@ class TimeCalculator {
             }
         }
         
-        const tipos = registros.map(r => r.tipo);
+        // ✅ CORRIGIDO: Aceitar dois formatos de entrada
+        // Formato 1: Array de objetos {tipo: 'entrada_manha', hora: '08:05'}
+        // Formato 2: Array com um objeto {entrada_manha: '08:05', saida_almoco: '13:22', ...}
+        let tipos;
+        
+        if (registros.length > 0 && registros[0].tipo) {
+            // Formato 1: Já é array de batidas
+            tipos = registros.map(r => r.tipo);
+        } else if (registros.length > 0 && registros[0].entrada_manha !== undefined) {
+            // Formato 2: Objeto agrupado - extrair quais tipos existem
+            const reg = registros[0];
+            tipos = [];
+            if (reg.entrada_manha && reg.entrada_manha !== '--') tipos.push('entrada_manha');
+            if (reg.saida_almoco && reg.saida_almoco !== '--') tipos.push('saida_almoco');
+            if (reg.volta_almoco && reg.volta_almoco !== '--') tipos.push('volta_almoco');
+            if (reg.saida_tarde && reg.saida_tarde !== '--') tipos.push('saida_tarde');
+        } else {
+            // Não conseguiu identificar formato
+            console.warn('⚠️ diaCompleto - Formato de registros não reconhecido:', registros);
+            return false;
+        }
         
         // Se é sábado, precisa apenas de entrada e saída (meio período)
         if (data) {
@@ -361,7 +502,7 @@ class TimeCalculator {
     }
     
     // Calcular estatísticas de período (função centralizada para todos os relatórios)
-    calcularEstatisticasPeriodo(registros, horariosCadastrados = null) {
+    calcularEstatisticasPeriodo(registros, horariosCadastrados = null, toleranciaMinutos = null) {
         let totalHorasTrabalhadas = 0;
         let totalExtras = 0;
         let totalFaltas = 0;
@@ -375,30 +516,56 @@ class TimeCalculator {
             const isDomingo = diaSemana === 0;
             const isSabado = diaSemana === 6;
             
-            // Pular domingos e registros com justificativa
-            if (isDomingo || registro.justificativa) {
+            // Pular domingos configurados como folga e registros com justificativa
+            const domingoFolga = registro.domingo_folga !== false; // Padrão: true (folga)
+            const temJustificativa = registro.justificativa && registro.justificativa !== null;
+            
+            if ((isDomingo && domingoFolga) || temJustificativa) {
                 return;
             }
             
-            // Preparar batidas reais
+            // ✅ CORRIGIDO: Preparar batidas reais com validação segura
+            const preparaHoraPeriodo = (hora) => {
+                if (!hora || hora === '--' || hora === 'null') return null;
+                return hora.includes(':') ? hora : hora + ':00';
+            };
+            
             const batidasReais = [
-                { tipo: 'entrada_manha', hora: registro.entrada_manha.includes(':') ? registro.entrada_manha : registro.entrada_manha + ':00' },
-                { tipo: 'saida_almoco', hora: registro.saida_almoco.includes(':') ? registro.saida_almoco : registro.saida_almoco + ':00' },
-                { tipo: 'volta_almoco', hora: registro.volta_almoco.includes(':') ? registro.volta_almoco : registro.volta_almoco + ':00' },
-                { tipo: 'saida_tarde', hora: registro.saida_tarde.includes(':') ? registro.saida_tarde : registro.saida_tarde + ':00' }
-            ].filter(p => p.hora !== '--:00' && p.hora !== 'null:00' && p.hora !== '--');
+                { tipo: 'entrada_manha', hora: preparaHoraPeriodo(registro.entrada_manha) },
+                { tipo: 'saida_almoco', hora: preparaHoraPeriodo(registro.saida_almoco) },
+                { tipo: 'volta_almoco', hora: preparaHoraPeriodo(registro.volta_almoco) },
+                { tipo: 'saida_tarde', hora: preparaHoraPeriodo(registro.saida_tarde) }
+            ].filter(p => p.hora !== null)
+             .map(p => ({
+                 tipo: p.tipo,
+                 hora: this.arredondarHorarioGeneroso(p.hora)
+             }));
             
             // Calcular horas trabalhadas
             const horasTrabalhadasStr = this.calcularHorasTrabalhadas(batidasReais);
-            if (horasTrabalhadasStr) {
-                const horasMin = this.timeToMinutes(horasTrabalhadasStr);
+            
+            // Calcular saldo da jornada com tolerância
+            const saldoJornada = this.calcularSaldoJornada(batidasReais, horariosCadastrados, data, toleranciaMinutos);
+            
+            // Aplicar tolerância às horas trabalhadas se necessário
+            let horasTrabalhadasFinal = horasTrabalhadasStr;
+            if (saldoJornada.saldoBruto > 0 && saldoJornada.status === 'normal') {
+                // Se funcionário trabalhou mais que o esperado e está dentro da tolerância,
+                // usar apenas a carga diária (8:00)
+                const cargaDiariaMinutos = isSabado ? 240 : 480; // 4h para sábado, 8h para outros dias
+                horasTrabalhadasFinal = this.minutesToTime(cargaDiariaMinutos);
+            }
+            
+            if (horasTrabalhadasFinal) {
+                const horasMin = this.timeToMinutes(horasTrabalhadasFinal);
                 totalHorasTrabalhadas += horasMin;
             }
             
-            // Calcular saldo da jornada
-            const saldoJornada = this.calcularSaldoJornada(batidasReais, horariosCadastrados, data);
-            totalExtras += saldoJornada.totalExtras || 0;
-            totalFaltas += saldoJornada.totalFaltas || 0;
+            // Só somar extras/faltas se estiver FORA da tolerância
+            if (saldoJornada.status !== 'normal') {
+                totalExtras += saldoJornada.totalExtras || 0;
+                totalFaltas += saldoJornada.totalFaltas || 0;
+            }
             
             // Verificar se o dia está completo
             const completo = this.diaCompleto(batidasReais, data, registro.justificativa);

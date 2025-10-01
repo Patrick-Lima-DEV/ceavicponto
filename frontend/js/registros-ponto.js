@@ -773,7 +773,7 @@ async function salvarAjusteRegistro() {
         if (response.success) {
             mostrarNotificacao('Ajuste realizado com sucesso!', 'success');
             fecharModalAjuste();
-            await carregarRegistrosPonto(); // Recarregar dados
+            await buscarRegistrosPonto(); // ✅ CORRIGIDO: Nome correto da função
         } else {
             mostrarNotificacao(response.message || 'Erro ao realizar ajuste', 'error');
         }
@@ -1047,16 +1047,13 @@ function exibirEstatisticasAjustes(totalAjustes, tempoTotalAjustes, ajustesPorMo
         </div>
     `;
     
-    // Inserir estatísticas após as estatísticas existentes
+    // ✅ CORRIGIDO: Inserir estatísticas sem duplicar
     const statsContainer = document.querySelector('.stats-grid');
     if (statsContainer) {
-        // Remover estatísticas de ajustes anteriores se existirem
-        const existingAjustesStats = statsContainer.querySelector('.ajustes-stats');
-        if (existingAjustesStats) {
-            existingAjustesStats.remove();
-        }
+        // Remover TODAS as estatísticas de ajustes anteriores (dentro E fora do container)
+        document.querySelectorAll('.ajustes-stats').forEach(stat => stat.remove());
         
-        // Adicionar novas estatísticas
+        // Adicionar novas estatísticas DEPOIS do container
         statsContainer.insertAdjacentHTML('afterend', estatisticasHTML);
     }
 }

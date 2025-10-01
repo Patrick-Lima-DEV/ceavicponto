@@ -74,7 +74,16 @@ function switchTab(tabName) {
             inicializarConfiguracoes();
             carregarConfiguracoes();
         } else if (tabName === 'relatorios') {
+            // ✅ Inicializar aba do Cartão de Ponto
             preencherSelectUsuarios();
+            
+            // Preencher datas padrão (mês atual)
+            const hoje = new Date();
+            const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+            
+            document.getElementById('relDataInicio').value = primeiroDia.toISOString().split('T')[0];
+            document.getElementById('relDataFim').value = ultimoDia.toISOString().split('T')[0];
         }
     } catch (error) {
         console.error('Erro ao mudar aba:', error);
@@ -574,45 +583,20 @@ function preencherSelectUsuarios() {
     });
 }
 
+// ⚠️ FUNÇÃO DEPRECIADA: Relatório Padrão removido
+// Sistema unificado usa apenas Cartão de Ponto
 async function buscarRelatorio() {
-    if (!verificarFuncoesAuth()) {
-        return;
-    }
-    
-    const dataInicio = document.getElementById('relDataInicio').value;
-    const dataFim = document.getElementById('relDataFim').value;
-    const usuarioId = document.getElementById('relUsuario').value;
-    
-    if (!dataInicio || !dataFim) {
-        mostrarNotificacao('Selecione o período para o relatório', 'warning');
-        return;
-    }
-    
-    const btnBuscar = document.querySelector('button[onclick="buscarRelatorio()"]');
-    mostrarLoading(btnBuscar);
-    
-    try {
-        let url = `admin.php?action=relatorio&data_inicio=${dataInicio}&data_fim=${dataFim}`;
-        if (usuarioId) {
-            url += `&usuario_id=${usuarioId}`;
-        }
-        
-        const response = await fazerRequisicao(url);
-        
-        if (response.success) {
-            relatorios = response.data.relatorio || [];
-            exibirRelatorio();
-        }
-    } catch (error) {
-        console.error('Erro ao buscar relatório:', error);
-        mostrarNotificacao('Erro ao buscar relatório', 'error');
-    } finally {
-        mostrarLoading(btnBuscar, false);
-    }
+    mostrarNotificacao('Use o botão "Gerar Cartão de Ponto" para visualizar relatórios', 'info');
+    return;
 }
 
+// ⚠️ FUNÇÃO DEPRECIADA: Relatório Padrão removido
+// Sistema unificado usa apenas Cartão de Ponto
 function exibirRelatorio() {
     const tbody = document.getElementById('relatorioTableBody');
+    
+    // Não fazer nada - função depreciada
+    if (!tbody) return;
     
     if (relatorios.length === 0) {
         tbody.innerHTML = `
@@ -740,12 +724,23 @@ function exibirRelatorio() {
         
         const horasTrabalhadasStr = timeCalculator.calcularHorasTrabalhadas(batidasReais);
         
-        // Usar a mesma lógica do cartão de ponto
-        const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, grupo.data);
+        // Usar a mesma lógica do cartão de ponto com tolerância
+        const toleranciaMinutos = grupo.tolerancia_minutos || 10;
+        const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, grupo.data, toleranciaMinutos);
+        
+        // Aplicar tolerância às horas trabalhadas se necessário
+        let horasTrabalhadasFinal = horasTrabalhadasStr;
+        if (saldoJornada.saldoBruto > 0 && saldoJornada.status === 'normal') {
+            // Se funcionário trabalhou mais que o esperado e está dentro da tolerância,
+            // mostrar apenas a carga diária (8:00)
+            horasTrabalhadasFinal = '08:00';
+        }
         const saldoInfo = {
             saldo: saldoJornada.saldoFormatado,
             status: saldoJornada.status,
-            tipo: saldoJornada.tipo
+            tipo: saldoJornada.tipo,
+            toleranciaAplicada: saldoJornada.toleranciaAplicada,
+            dentroTolerancia: saldoJornada.status === 'normal'
         };
         const completo = timeCalculator.diaCompleto(grupo.registros, grupo.data, grupo.justificativa);
         
@@ -779,8 +774,23 @@ function exibirRelatorio() {
             }
         }
 
-        // Se há justificativa, não mostrar horários nem horas trabalhadas
-        const mostrarHorarios = !grupo.justificativa;
+        // Verificar se é domingo (folga) - usar flag do backend ou calcular
+        const isDomingo = primeiroRegistro.is_domingo || (() => {
+            const [ano, mes, dia] = grupo.data.split('-');
+            const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
+            return dataObj.getDay() === 0; // 0 = domingo
+        })();
+
+        // Verificar se domingo é folga (usar configuração do grupo de jornada)
+        const domingoFolga = primeiroRegistro.domingo_folga !== false; // Padrão: true (folga)
+
+        // Adicionar indicador para domingo se não há justificativa e é configurado como folga
+        if (isDomingo && domingoFolga && !grupo.justificativa) {
+            indicadorJustificativa = '<span class="justificativa domingo-folga">FOLGA</span>';
+        }
+
+        // Se há justificativa ou é domingo configurado como folga, não mostrar horários nem horas trabalhadas
+        const mostrarHorarios = !grupo.justificativa && !(isDomingo && domingoFolga);
         
         
         return {
@@ -792,13 +802,34 @@ function exibirRelatorio() {
                     <td>${mostrarHorarios ? (registroUnificado.saida_almoco || '--') : '--'}</td>
                     <td>${mostrarHorarios ? (registroUnificado.volta_almoco || '--') : '--'}</td>
                     <td>${mostrarHorarios ? (registroUnificado.saida_tarde || '--') : '--'}</td>
-                    <td>${mostrarHorarios ? (horasTrabalhadasStr ? horasTrabalhadasStr.substring(0, 5) : '00:00') : '--'}</td>
+                    <td>${mostrarHorarios ? (horasTrabalhadasFinal ? horasTrabalhadasFinal.substring(0, 5) : '00:00') : '--'}</td>
                     <td>
                         ${grupo.justificativa ? indicadorJustificativa : (
                             saldoInfo.status !== 'normal' ? `
-                                <span class="${saldoInfo.status}">${saldoInfo.saldo}</span>
+                                <span class="${saldoInfo.saldo.startsWith('+') ? 'extra' : saldoInfo.saldo.startsWith('-') ? 'falta' : saldoInfo.status}">${saldoInfo.saldo}</span>
                             ` : '--'
                         )}
+                    </td>
+                    <td>
+                        ${grupo.tem_edicao ? `
+                            <div class="ajuste-detalhes">
+                                <div class="ajuste-info">
+                                    <i class="fas fa-edit" style="color: #f59e0b; margin-right: 5px;"></i>
+                                    <span style="font-size: 0.85rem; color: #6b7280;">
+                                        ${grupo.detalhes_ajuste && grupo.detalhes_ajuste.length > 0 ? 
+                                            grupo.detalhes_ajuste.map(ajuste => `
+                                                <div style="margin-bottom: 3px;">
+                                                    <strong>${ajuste.tipo.replace('_', ' ').toUpperCase()}:</strong> 
+                                                    ${ajuste.editado_por_nome} 
+                                                    (${ajuste.motivo_ajuste.replace('_', ' ')})
+                                                    ${ajuste.tempo_ajustado_minutos > 0 ? `+${ajuste.tempo_ajustado_minutos}min` : ''}
+                                                </div>
+                                            `).join('') : 'Ajustado'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                        ` : '--'}
                     </td>
                 </tr>
             `,
@@ -820,7 +851,7 @@ function exibirRelatorio() {
     
     const htmlTotais = `
         <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #333;">
-            <td colspan="6" style="text-align: right; padding: 10px;">
+            <td colspan="7" style="text-align: right; padding: 10px;">
                 <strong>TOTAIS DO PERÍODO:</strong>
             </td>
             <td style="text-align: center; padding: 10px;">
@@ -838,41 +869,32 @@ function exibirRelatorio() {
                         </div>
                     ` : ''}
                 </div>
-                </td>
+            </td>
+            <td style="text-align: center; padding: 10px;">
+                <div style="font-size: 11px; color: #6b7280;">
+                    ${estatisticas.totalAjustes > 0 ? `
+                        <div style="margin-bottom: 3px;">
+                            <i class="fas fa-edit" style="color: #f59e0b;"></i>
+                            <strong>${estatisticas.totalAjustes}</strong> ajustes
+                        </div>
+                        <div style="font-size: 10px;">
+                            Tempo: <strong>${estatisticas.tempoTotalAjustes}</strong>
+                        </div>
+                    ` : '--'}
+                </div>
+            </td>
             </tr>
         `;
     
     tbody.innerHTML = htmlTabela + htmlTotais;
 }
 
+// ⚠️ FUNÇÃO DEPRECIADA: Relatório Padrão removido em favor do Cartão de Ponto
+// Mantida apenas para compatibilidade, mas não é mais usada
 async function gerarRelatorio() {
-    if (!verificarFuncoesAuth()) {
-        return;
-    }
-    
-    if (relatorios.length === 0) {
-        mostrarNotificacao('Busque os dados antes de gerar o relatório', 'warning');
-        return;
-    }
-    
-    // Criar conteúdo HTML para impressão
-    const dataInicio = document.getElementById('relDataInicio').value;
-    const dataFim = document.getElementById('relDataFim').value;
-    const usuarioSelecionado = document.getElementById('relUsuario');
-    const nomeUsuario = usuarioSelecionado.value ? 
-        usuarioSelecionado.options[usuarioSelecionado.selectedIndex].text : 'Todos os usuários';
-    
-    const htmlRelatorio = gerarHtmlRelatorio(dataInicio, dataFim, nomeUsuario);
-    
-    // Abrir em nova janela para impressão/PDF
-    const janela = window.open('', '_blank');
-    janela.document.write(htmlRelatorio);
-    janela.document.close();
-    
-    // Focar na nova janela para facilitar a impressão
-    janela.focus();
-    
-    mostrarNotificacao('Relatório gerado! Use Ctrl+P para imprimir ou salvar como PDF', 'success');
+    // Redirecionar para Cartão de Ponto
+    mostrarNotificacao('Use o "Cartão de Ponto" para gerar relatórios oficiais', 'info');
+    return;
 }
 
 async function gerarCartaoPonto() {
@@ -884,13 +906,25 @@ async function gerarCartaoPonto() {
     const dataFim = document.getElementById('relDataFim').value;
     const usuarioId = document.getElementById('relUsuario').value;
     
-    if (!dataInicio || !dataFim) {
-        mostrarNotificacao('Selecione o período para o cartão de ponto', 'warning');
+    // ✅ Validações aprimoradas
+    if (!usuarioId) {
+        mostrarNotificacao('⚠️ Por favor, selecione um funcionário', 'warning');
+        document.getElementById('relUsuario').focus();
+        document.getElementById('relUsuario').style.borderColor = '#dc2626';
+        setTimeout(() => {
+            document.getElementById('relUsuario').style.borderColor = '';
+        }, 2000);
         return;
     }
     
-    if (!usuarioId) {
-        mostrarNotificacao('Selecione um funcionário específico para gerar o cartão de ponto', 'warning');
+    if (!dataInicio || !dataFim) {
+        mostrarNotificacao('⚠️ Selecione o período (data início e fim)', 'warning');
+        return;
+    }
+    
+    // Validar que data fim não é anterior à data início
+    if (new Date(dataFim) < new Date(dataInicio)) {
+        mostrarNotificacao('⚠️ Data fim não pode ser anterior à data início', 'warning');
         return;
     }
     
@@ -1237,52 +1271,38 @@ function inicializarConfiguracoes() {
 
 async function gerarCartaoPontoFallback(year, month, usuarioId, dataInicio, dataFim, isMonthlyComplete) {
     try {
-        // Usar a MESMA API do Relatório de Controle para garantir consistência
-        let url = `admin.php?action=relatorio&data_inicio=${dataInicio}&data_fim=${dataFim}`;
+        // Usar a API específica do cartão de ponto
+        let url = `admin.php?action=cartao_ponto&data_inicio=${dataInicio}&data_fim=${dataFim}`;
         if (usuarioId) {
             url += `&usuario_id=${usuarioId}`;
         }
         
         const response = await fazerRequisicao(url);
         
-        if (response.success && response.data.relatorio) {
-            // Usar os mesmos dados do relatório de controle
-            const relatorioData = response.data.relatorio;
+        if (response.success && response.data.dados) {
+            // Usar os dados do cartão de ponto (estrutura: {usuario, periodo, registros})
+            const dadosCompletos = response.data.dados;
+            const relatorioData = dadosCompletos.registros || [];
             
-            // Buscar dados da empresa separadamente (API do relatório não retorna empresa)
-            let empresa;
-            try {
-                const empresaResponse = await fazerRequisicao('admin.php?action=configuracoes_empresa');
-                if (empresaResponse.success) {
-                    const configs = empresaResponse.data.configuracoes;
-                    empresa = {
-                        nome: configs.empresa_nome?.valor || 'Tech-Ponto Sistemas',
-                        cnpj: configs.empresa_cnpj?.valor || '00.000.000/0001-00',
-                        endereco: configs.empresa_endereco?.valor || 'Rua da Inovação, 123 - Centro',
-                        cidade: configs.empresa_cidade?.valor || 'São Paulo - SP',
-                        telefone: configs.empresa_telefone?.valor || '(11) 1234-5678',
-                        email: configs.empresa_email?.valor || 'contato@techponto.com',
-                        logo: configs.empresa_logo?.valor || ''
-                    };
-                } else {
-                    throw new Error('Erro ao buscar configurações da empresa');
-                }
-            } catch (error) {
-                console.warn('Usando dados padrão da empresa:', error);
-                // Usar dados padrão se não conseguir buscar
-                empresa = {
-                    nome: 'Tech-Ponto Sistemas',
-                    cnpj: '00.000.000/0001-00',
-                    endereco: 'Rua da Inovação, 123 - Centro',
-                    cidade: 'São Paulo - SP',
-                    telefone: '(11) 1234-5678',
-                    email: 'contato@techponto.com',
-                    logo: ''
-                };
-            }
+            // Usar dados da empresa retornados pela API (já incluídos)
+            const empresa = response.data.empresa || {
+                nome: 'Tech-Ponto Sistemas',
+                cnpj: '00.000.000/0001-00',
+                endereco: 'Rua da Inovação, 123 - Centro',
+                cidade: 'São Paulo - SP',
+                telefone: '(11) 1234-5678',
+                email: 'contato@techponto.com',
+                logo: ''
+            };
             
-            // Converter estrutura do relatório para estrutura do cartão de ponto
-            const dados = converterRelatorioParaCartaoPonto(relatorioData, usuarioId);
+            // ✅ CORRIGIDO: Usar dados do usuário retornados pela API diretamente
+            const dados = converterRelatorioParaCartaoPonto(
+                relatorioData, 
+                usuarioId, 
+                dataInicio, 
+                dataFim, 
+                dadosCompletos.usuario  // ✅ Passar objeto usuario da API
+            );
             const html = gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete);
             
             // Abrir HTML em nova janela
@@ -1323,65 +1343,114 @@ async function gerarCartaoPontoFallback(year, month, usuarioId, dataInicio, data
 }
 
 // Converter estrutura do relatório para estrutura do cartão de ponto
-function converterRelatorioParaCartaoPonto(relatorioData, usuarioId) {
-    // Agrupar registros por data (mesma lógica do relatório)
-    const relatorioAgrupado = {};
+function converterRelatorioParaCartaoPonto(relatorioData, usuarioId, dataInicio, dataFim, usuarioFromAPI = null) {
+    // ✅ CORRIGIDO: Os dados JÁ VÊM AGRUPADOS do backend!
+    // Backend retorna: [{data: '2025-09-29', entrada_manha: '08:05', saida_almoco: '13:22', ...}]
+    // Não precisa reagrupar, apenas validar e usar
     
-    relatorioData.forEach(reg => {
-        const data = reg.data;
-        if (!relatorioAgrupado[data]) {
-            relatorioAgrupado[data] = {
-                data: data,
-                registros: [],
-                entrada_manha: null,
-                saida_almoco: null,
-                volta_almoco: null,
-                saida_tarde: null,
-                justificativa: null
+    // Verificar se os dados já vêm agrupados (tem campos entrada_manha, saida_almoco, etc)
+    const jaAgrupado = relatorioData.length > 0 && 
+                       relatorioData[0].hasOwnProperty('entrada_manha');
+    
+    let registros;
+    
+    if (jaAgrupado) {
+        // ✅ Dados já vêm agrupados do backend - usar diretamente
+        registros = relatorioData.map(reg => {
+            // ✅ DEBUG: Verificar dados de ajuste
+            console.log('Registro com ajuste:', reg);
+            console.log('Tem edição:', reg.tem_edicao);
+            console.log('Detalhes ajuste:', reg.detalhes_ajuste);
+            
+            return {
+                data: reg.data,
+                entrada_manha: reg.entrada_manha || '--',
+                saida_almoco: reg.saida_almoco || '--',
+                volta_almoco: reg.volta_almoco || '--',
+                saida_tarde: reg.saida_tarde || '--',
+                justificativa: reg.justificativa,
+                // ✅ ADICIONAR: Dados de ajuste
+                tem_edicao: reg.tem_edicao || false,
+                detalhes_ajuste: reg.detalhes_ajuste || []
             };
-        }
+        });
+    } else {
+        // Dados vêm no formato antigo (não agrupados) - fazer agrupamento
+        const relatorioAgrupado = {};
         
-        relatorioAgrupado[data].registros.push(reg);
+        relatorioData.forEach(reg => {
+            const data = reg.data;
+            if (!relatorioAgrupado[data]) {
+                relatorioAgrupado[data] = {
+                    data: data,
+                    registros: [],
+                    entrada_manha: null,
+                    saida_almoco: null,
+                    volta_almoco: null,
+                    saida_tarde: null,
+                    justificativa: null
+                };
+            }
+            
+            relatorioAgrupado[data].registros.push(reg);
+            
+            // Mapear registros para horários
+            if (reg.tipo === 'entrada_manha') relatorioAgrupado[data].entrada_manha = reg.hora;
+            else if (reg.tipo === 'saida_almoco') relatorioAgrupado[data].saida_almoco = reg.hora;
+            else if (reg.tipo === 'volta_almoco') relatorioAgrupado[data].volta_almoco = reg.hora;
+            else if (reg.tipo === 'saida_tarde') relatorioAgrupado[data].saida_tarde = reg.hora;
+            
+            // Capturar justificativa se existir
+            if (reg.justificativa_codigo) {
+                relatorioAgrupado[data].justificativa = {
+                    codigo: reg.justificativa_codigo,
+                    motivo: reg.justificativa_motivo,
+                    status: reg.justificativa_status
+                };
+            }
+        });
         
-        // Mapear registros para horários
-        if (reg.tipo === 'entrada_manha') relatorioAgrupado[data].entrada_manha = reg.hora;
-        else if (reg.tipo === 'saida_almoco') relatorioAgrupado[data].saida_almoco = reg.hora;
-        else if (reg.tipo === 'volta_almoco') relatorioAgrupado[data].volta_almoco = reg.hora;
-        else if (reg.tipo === 'saida_tarde') relatorioAgrupado[data].saida_tarde = reg.hora;
+        // Converter para estrutura do cartão de ponto
+        registros = Object.values(relatorioAgrupado).map(grupo => ({
+            data: grupo.data,
+            entrada_manha: grupo.entrada_manha || '--',
+            saida_almoco: grupo.saida_almoco || '--',
+            volta_almoco: grupo.volta_almoco || '--',
+            saida_tarde: grupo.saida_tarde || '--',
+            justificativa: grupo.justificativa
+        }));
+    }
+    
+    // ✅ PRIORIZAR: Usar dados do usuário retornados pela API
+    let usuario;
+    
+    if (usuarioFromAPI && usuarioFromAPI.nome) {
+        // Usar dados vindos diretamente da API (mais confiável)
+        usuario = {
+            id: usuarioId,
+            nome: usuarioFromAPI.nome || usuarioFromAPI.usuario_nome || 'Funcionário',
+            cpf: usuarioFromAPI.cpf || 'Não informado',
+            matricula: usuarioFromAPI.matricula || 'Não informada',
+            cargo: usuarioFromAPI.cargo || 'Não informado',
+            departamento: usuarioFromAPI.departamento_nome || usuarioFromAPI.departamento || 'Não informado',
+            entrada_manha: usuarioFromAPI.entrada_manha_jornada || usuarioFromAPI.entrada_manha || '08:00:00',
+            saida_almoco: usuarioFromAPI.saida_almoco_jornada || usuarioFromAPI.saida_almoco || '12:00:00',
+            volta_almoco: usuarioFromAPI.volta_almoco_jornada || usuarioFromAPI.volta_almoco || '13:00:00',
+            saida_tarde: usuarioFromAPI.saida_tarde_jornada || usuarioFromAPI.saida_tarde || '18:00:00',
+            tolerancia_minutos: usuarioFromAPI.tolerancia_minutos || 10
+        };
+    } else {
+        // Fallback: Pegar do primeiro registro que tenha dados completos
+        const primeiroRegistro = relatorioData.find(reg => 
+            reg.usuario_nome && 
+            reg.matricula && 
+            reg.departamento_nome &&
+            !reg.justificativa_codigo
+        ) || relatorioData.find(reg => reg.usuario_nome && reg.matricula) || relatorioData[0];
         
-        // Capturar justificativa se existir
-        if (reg.justificativa_codigo) {
-            relatorioAgrupado[data].justificativa = {
-                codigo: reg.justificativa_codigo,
-                motivo: reg.justificativa_motivo,
-                status: reg.justificativa_status
-            };
-        }
-    });
-    
-    // Converter para estrutura do cartão de ponto
-    const registros = Object.values(relatorioAgrupado).map(grupo => ({
-        data: grupo.data,
-        entrada_manha: grupo.entrada_manha || '--',
-        saida_almoco: grupo.saida_almoco || '--',
-        volta_almoco: grupo.volta_almoco || '--',
-        saida_tarde: grupo.saida_tarde || '--',
-        justificativa: grupo.justificativa
-    }));
-    
-    // Pegar informações do usuário do primeiro registro que tenha dados completos
-    // Priorizar registros que tenham dados do usuário (não apenas justificativas)
-    const primeiroRegistro = relatorioData.find(reg => 
-        reg.usuario_nome && 
-        reg.matricula && 
-        reg.departamento_nome &&
-        !reg.justificativa_codigo // Priorizar registros que não sejam apenas justificativas
-    ) || relatorioData.find(reg => reg.usuario_nome && reg.matricula) || relatorioData[0];
-    
         // Se ainda não temos dados corretos, buscar em todos os registros
         let usuarioData = primeiroRegistro;
         if (!usuarioData?.matricula || usuarioData.matricula === '0000' || usuarioData.matricula === 'Não informada') {
-            // Buscar em todos os registros por um que tenha dados corretos
             usuarioData = relatorioData.find(reg => 
                 reg.usuario_nome && 
                 reg.matricula && 
@@ -1390,27 +1459,26 @@ function converterRelatorioParaCartaoPonto(relatorioData, usuarioId) {
                 reg.departamento_nome
             ) || primeiroRegistro;
         }
+        
+        usuario = {
+            id: usuarioId,
+            nome: usuarioData?.usuario_nome || 'Funcionário',
+            cpf: usuarioData?.cpf || 'Não informado',
+            matricula: usuarioData?.matricula || 'Não informada',
+            cargo: usuarioData?.cargo || 'Não informado',
+            departamento: usuarioData?.departamento_nome || 'Não informado',
+            entrada_manha: usuarioData?.entrada_manha_jornada || usuarioData?.jornada_entrada_manha || usuarioData?.entrada_manha || '08:00:00',
+            saida_almoco: usuarioData?.saida_almoco_jornada || usuarioData?.jornada_saida_almoco || usuarioData?.saida_almoco || '12:00:00',
+            volta_almoco: usuarioData?.volta_almoco_jornada || usuarioData?.jornada_volta_almoco || usuarioData?.volta_almoco || '13:00:00',
+            saida_tarde: usuarioData?.saida_tarde_jornada || usuarioData?.jornada_saida_tarde || usuarioData?.saida_tarde || '18:00:00',
+            tolerancia_minutos: usuarioData?.tolerancia_minutos || 10
+        };
+    }
     
-    const usuario = {
-        id: usuarioId,
-        nome: usuarioData?.usuario_nome || 'Funcionário',
-        cpf: usuarioData?.cpf || 'Não informado',
-        matricula: usuarioData?.matricula || 'Não informada',
-        cargo: usuarioData?.cargo || 'Não informado',
-        departamento: usuarioData?.departamento_nome || 'Não informado',
-        entrada_manha: usuarioData?.entrada_manha || '08:00:00',
-        saida_almoco: usuarioData?.saida_almoco || '12:00:00',
-        volta_almoco: usuarioData?.volta_almoco || '13:00:00',
-        saida_tarde: usuarioData?.saida_tarde || '18:00:00'
-    };
-    
-    // Dados do usuário configurados para o cartão de ponto
-    
-    // Determinar período
-    const datas = Object.keys(relatorioAgrupado).sort();
+    // Usar as datas selecionadas pelo usuário (não as datas dos registros)
     const periodo = {
-        inicio: datas[0] || '',
-        fim: datas[datas.length - 1] || ''
+        inicio: dataInicio,
+        fim: dataFim
     };
     
     return {
@@ -1432,30 +1500,53 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
         saida_tarde: usuario.saida_tarde || '18:00:00'
     };
     
-    // Usar função centralizada para calcular estatísticas
-    const estatisticas = timeCalculator.calcularEstatisticasPeriodo(registros, horariosCadastrados);
+    // Usar função centralizada para calcular estatísticas com tolerância
+    const toleranciaMinutos = usuario.tolerancia_minutos || 10;
+    const estatisticas = timeCalculator.calcularEstatisticasPeriodo(registros, horariosCadastrados, toleranciaMinutos);
     
     // Processar cada registro e calcular com nova lógica (incluindo justificativas)
     const registrosProcessados = registros.map(registro => {
-        // Preparar batidas reais
+        // ✅ CORRIGIDO: Verificar se horário existe antes de chamar includes()
+        const preparaHora = (hora) => {
+            if (!hora || hora === '--' || hora === 'null') return '--';
+            return hora.includes(':') ? hora : hora + ':00';
+        };
+        
+        // Preparar batidas reais (com arredondamento generoso)
         const batidasReais = [
-            { tipo: 'entrada_manha', hora: registro.entrada_manha.includes(':') ? registro.entrada_manha : registro.entrada_manha + ':00' },
-            { tipo: 'saida_almoco', hora: registro.saida_almoco.includes(':') ? registro.saida_almoco : registro.saida_almoco + ':00' },
-            { tipo: 'volta_almoco', hora: registro.volta_almoco.includes(':') ? registro.volta_almoco : registro.volta_almoco + ':00' },
-            { tipo: 'saida_tarde', hora: registro.saida_tarde.includes(':') ? registro.saida_tarde : registro.saida_tarde + ':00' }
-        ].filter(p => p.hora !== '--:00' && p.hora !== '--');
+            { tipo: 'entrada_manha', hora: preparaHora(registro.entrada_manha) },
+            { tipo: 'saida_almoco', hora: preparaHora(registro.saida_almoco) },
+            { tipo: 'volta_almoco', hora: preparaHora(registro.volta_almoco) },
+            { tipo: 'saida_tarde', hora: preparaHora(registro.saida_tarde) }
+        ].filter(p => p.hora !== '--' && p.hora !== 'null')
+         .map(p => ({
+             tipo: p.tipo,
+             hora: timeCalculator.arredondarHorarioGeneroso(p.hora)
+         }));
         
         // Calcular horas trabalhadas
         const horasTrabalhadas = timeCalculator.calcularHorasTrabalhadas(batidasReais);
         
-        // Usar nova lógica de saldo com horários cadastrados
-        const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, registro.data);
+        // Usar nova lógica de saldo com horários cadastrados e tolerância
+        const toleranciaMinutos = usuario.tolerancia_minutos || 10;
+        const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, registro.data, toleranciaMinutos);
+        
+        // Aplicar tolerância às horas trabalhadas se necessário
+        let horasTrabalhadasFinal = horasTrabalhadas;
+        if (saldoJornada.saldoBruto > 0 && saldoJornada.status === 'normal') {
+            // Se funcionário trabalhou mais que o esperado e está dentro da tolerância,
+            // mostrar apenas a carga diária (8:00)
+            horasTrabalhadasFinal = '08:00';
+        }
         
         // Verificar se é domingo (folga) - corrigir problema de fuso horário
         const [ano, mes, dia] = registro.data.split('-');
         const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia));
         const diaSemana = dataObj.getDay(); // 0 = domingo
         const isDomingo = diaSemana === 0;
+        
+        // Verificar se domingo é folga (usar configuração do grupo de jornada)
+        const domingoFolga = usuario.domingo_folga !== false; // Padrão: true (folga)
         
         // Determinar indicador de justificativa (mesma lógica do relatório)
         let indicadorJustificativa = '';
@@ -1492,7 +1583,7 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
                     tipoFinal = 'justificado';
             }
             saldoFinal = indicadorJustificativa;
-        } else if (isDomingo) {
+        } else if (isDomingo && domingoFolga) {
             indicadorJustificativa = 'FOLGA';
             tipoFinal = 'domingo_folga';
             saldoFinal = '00:00:00';
@@ -1503,16 +1594,16 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
         
         // Totais já calculados pela função centralizada
         
-        // Se há justificativa ou é domingo, não mostrar horários
-        const mostrarHorarios = !registro.justificativa && !isDomingo;
+        // Se há justificativa ou é domingo configurado como folga, não mostrar horários
+        const mostrarHorarios = !registro.justificativa && !(isDomingo && domingoFolga);
         
         return {
             ...registro,
-            entrada_manha: mostrarHorarios ? registro.entrada_manha : '--',
-            saida_almoco: mostrarHorarios ? registro.saida_almoco : '--',
-            volta_almoco: mostrarHorarios ? registro.volta_almoco : '--',
-            saida_tarde: mostrarHorarios ? registro.saida_tarde : '--',
-            horas_trabalhadas: mostrarHorarios ? horasTrabalhadas.substring(0, 5) : '--',
+            entrada_manha: mostrarHorarios ? timeCalculator.arredondarHorarioGeneroso(registro.entrada_manha) : '--',
+            saida_almoco: mostrarHorarios ? timeCalculator.arredondarHorarioGeneroso(registro.saida_almoco) : '--',
+            volta_almoco: mostrarHorarios ? timeCalculator.arredondarHorarioGeneroso(registro.volta_almoco) : '--',
+            saida_tarde: mostrarHorarios ? timeCalculator.arredondarHorarioGeneroso(registro.saida_tarde) : '--',
+            horas_trabalhadas: mostrarHorarios ? horasTrabalhadasFinal.substring(0, 5) : '--',
             saldo: saldoFinal,
             tipo: tipoFinal,
             isDomingo: isDomingo,
@@ -1531,9 +1622,11 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
         total_dias: estatisticas.totalDias
     };
     
-    // Determinar período
-    const inicioObj = new Date(periodo.inicio);
-    const fimObj = new Date(periodo.fim);
+    // Determinar período - corrigir problema de fuso horário
+    const [anoInicio, mesInicio, diaInicio] = periodo.inicio.split('-');
+    const [anoFim, mesFim, diaFim] = periodo.fim.split('-');
+    const inicioObj = new Date(parseInt(anoInicio), parseInt(mesInicio) - 1, parseInt(diaInicio));
+    const fimObj = new Date(parseInt(anoFim), parseInt(mesFim) - 1, parseInt(diaFim));
     
     let periodoTitulo, periodoSubtitulo;
     if (isMonthlyComplete) {
@@ -1652,6 +1745,7 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
                     <th>Horas Trabalhadas</th>
                     <th>Saldo</th>
                     <th>Observações</th>
+                    <th>Detalhes do Ajuste</th>
                 </tr>
             </thead>
             <tbody>
@@ -1670,8 +1764,19 @@ function gerarCartaoPontoHTML(dados, empresa, isMonthlyComplete) {
                         <td>${registro.volta_almoco}</td>
                         <td>${registro.saida_tarde}</td>
                         <td>${registro.horas_trabalhadas}</td>
-                        <td class="${registro.tipo}">${registro.isDomingo ? 'FOLGA' : registro.saldo}</td>
+                        <td class="${registro.isDomingo ? '' : (registro.saldo.startsWith('+') ? 'extra' : registro.saldo.startsWith('-') ? 'falta' : '')}">${registro.isDomingo ? 'FOLGA' : registro.saldo}</td>
                         <td>${registro.observacoes || (registro.isDomingo ? 'Domingo - Folga' : '')}</td>
+                        <td style="font-size: 9px; color: #666;">
+                            ${registro.detalhes_ajuste && registro.detalhes_ajuste.length > 0 ? 
+                                registro.detalhes_ajuste.map(ajuste => `
+                                    <div style="margin-bottom: 2px; border-left: 2px solid #f59e0b; padding-left: 4px;">
+                                        <strong>${ajuste.tipo.replace('_', ' ').toUpperCase()}:</strong><br>
+                                        ${ajuste.editado_por_nome} (${ajuste.motivo_ajuste.replace('_', ' ')})<br>
+                                        ${ajuste.tempo_ajustado_minutos > 0 ? `<span style="color: #dc2626;">+${ajuste.tempo_ajustado_minutos}min</span>` : ''}
+                                    </div>
+                                `).join('') : '--'
+                            }
+                        </td>
                     </tr>
                     `;
                 }).join('')}

@@ -1005,7 +1005,7 @@
                 };
                 
                 // Usar o time-calculator para calcular saldo (mesma lógica do backend)
-                const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados);
+                const saldoJornada = timeCalculator.calcularSaldoJornada(batidasReais, horariosCadastrados, null, toleranciaMinutos);
                 
                 // Sempre retornar o saldo real, mas marcar status baseado na tolerância
                 const saldoAbsoluto = Math.abs(saldoJornada.saldoFinal);

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../utils/time_utils.php';
 
 // Headers para evitar cache
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -10,10 +11,45 @@ header('Expires: 0');
 // PHP apenas retorna dados brutos e gera relatórios
 
 function gerarRelatorioCompleto($usuario, $pontos, $dataInicio, $dataFim) {
+    // ✅ Extrair dados do usuário do primeiro ponto (todos têm os mesmos dados do usuário)
+    $dadosUsuario = [];
+    if (!empty($pontos)) {
+        $primeiroPonto = $pontos[0];
+        $dadosUsuario = [
+            'usuario_nome' => $primeiroPonto['usuario_nome'] ?? $usuario['nome'],
+            'cpf' => $primeiroPonto['cpf'] ?? $usuario['cpf'],
+            'matricula' => $primeiroPonto['matricula'] ?? $usuario['matricula'],
+            'cargo' => $primeiroPonto['cargo'] ?? $usuario['cargo'],
+            'departamento_nome' => $primeiroPonto['departamento_nome'] ?? $usuario['departamento_nome'],
+            'carga_diaria_minutos' => $primeiroPonto['carga_diaria_minutos'] ?? 480,
+            'tolerancia_minutos' => $primeiroPonto['tolerancia_minutos'] ?? 10,
+            'jornada_entrada_manha' => $primeiroPonto['jornada_entrada_manha'] ?? $usuario['entrada_manha'] ?? '08:00:00',
+            'jornada_saida_almoco' => $primeiroPonto['jornada_saida_almoco'] ?? $usuario['saida_almoco'] ?? '12:00:00',
+            'jornada_volta_almoco' => $primeiroPonto['jornada_volta_almoco'] ?? $usuario['volta_almoco'] ?? '13:00:00',
+            'jornada_saida_tarde' => $primeiroPonto['jornada_saida_tarde'] ?? $usuario['saida_tarde'] ?? '18:00:00'
+        ];
+    } else {
+        // Se não há pontos, usar dados do usuário passado como parâmetro
+        $dadosUsuario = [
+            'usuario_nome' => $usuario['nome'],
+            'cpf' => $usuario['cpf'],
+            'matricula' => $usuario['matricula'],
+            'cargo' => $usuario['cargo'],
+            'departamento_nome' => $usuario['departamento_nome'],
+            'carga_diaria_minutos' => 480,
+            'tolerancia_minutos' => 10,
+            'jornada_entrada_manha' => $usuario['entrada_manha'] ?? '08:00:00',
+            'jornada_saida_almoco' => $usuario['saida_almoco'] ?? '12:00:00',
+            'jornada_volta_almoco' => $usuario['volta_almoco'] ?? '13:00:00',
+            'jornada_saida_tarde' => $usuario['saida_tarde'] ?? '18:00:00'
+        ];
+    }
+    
     // Agrupar pontos por data
     $registrosPorData = [];
     foreach ($pontos as $ponto) {
         $data = $ponto['data'];
+        
         if (!isset($registrosPorData[$data])) {
             $registrosPorData[$data] = [
                 'data' => $data,
@@ -22,28 +58,68 @@ function gerarRelatorioCompleto($usuario, $pontos, $dataInicio, $dataFim) {
                 'volta_almoco' => '--',
                 'saida_tarde' => '--',
                 'observacoes' => '',
-                'justificativa' => null
+                'justificativa' => null,
+                // ✅ ADICIONAR: Incluir dados do usuário em cada registro
+                'usuario_nome' => $dadosUsuario['usuario_nome'],
+                'cpf' => $dadosUsuario['cpf'],
+                'matricula' => $dadosUsuario['matricula'],
+                'cargo' => $dadosUsuario['cargo'],
+                'departamento_nome' => $dadosUsuario['departamento_nome'],
+                'carga_diaria_minutos' => $dadosUsuario['carga_diaria_minutos'],
+                'tolerancia_minutos' => $dadosUsuario['tolerancia_minutos'],
+                'entrada_manha_jornada' => $dadosUsuario['jornada_entrada_manha'],
+                'saida_almoco_jornada' => $dadosUsuario['jornada_saida_almoco'],
+                'volta_almoco_jornada' => $dadosUsuario['jornada_volta_almoco'],
+                'saida_tarde_jornada' => $dadosUsuario['jornada_saida_tarde'],
+                // ✅ ADICIONAR: Dados de ajuste para cada registro
+                'tem_edicao' => false,
+                'detalhes_ajuste' => []
             ];
         }
         
         // Mapear tipos de ponto
         switch ($ponto['tipo']) {
             case 'entrada_manha':
-                $registrosPorData[$data]['entrada_manha'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['entrada_manha'] = arredondarHorario($ponto['hora']);
                 break;
             case 'saida_almoco':
-                $registrosPorData[$data]['saida_almoco'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['saida_almoco'] = arredondarHorario($ponto['hora']);
                 break;
             case 'volta_almoco':
-                $registrosPorData[$data]['volta_almoco'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['volta_almoco'] = arredondarHorario($ponto['hora']);
                 break;
             case 'saida_tarde':
-                $registrosPorData[$data]['saida_tarde'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['saida_tarde'] = arredondarHorario($ponto['hora']);
                 break;
         }
         
+        // ✅ MELHORAR: Capturar detalhes completos do ajuste
         if ($ponto['editado']) {
-            $registrosPorData[$data]['observacoes'] = 'Editado';
+            $registrosPorData[$data]['tem_edicao'] = true;
+            
+            // Adicionar detalhes do ajuste
+            $detalhesAjuste = [
+                'tipo' => $ponto['tipo'],
+                'hora_original' => $ponto['hora'], // Hora atual (já ajustada)
+                'editado_em' => $ponto['editado_em'],
+                'editado_por_nome' => $ponto['editado_por_nome'] ?? 'Sistema',
+                'motivo_ajuste' => $ponto['motivo_ajuste'] ?? 'Não informado',
+                'tempo_ajustado_minutos' => $ponto['tempo_ajustado_minutos'] ?? 0,
+                'observacao' => $ponto['observacao'] ?? ''
+            ];
+            
+            $registrosPorData[$data]['detalhes_ajuste'][] = $detalhesAjuste;
+            
+            // Atualizar observações com informações do ajuste
+            $observacaoAjuste = "Ajustado por {$detalhesAjuste['editado_por_nome']}";
+            if ($detalhesAjuste['motivo_ajuste'] !== 'Não informado') {
+                $observacaoAjuste .= " - Motivo: " . ucfirst(str_replace('_', ' ', $detalhesAjuste['motivo_ajuste']));
+            }
+            if ($detalhesAjuste['observacao']) {
+                $observacaoAjuste .= " - " . $detalhesAjuste['observacao'];
+            }
+            
+            $registrosPorData[$data]['observacoes'] = $observacaoAjuste;
         }
         
         // Capturar informações de justificativa (se houver)
@@ -59,15 +135,33 @@ function gerarRelatorioCompleto($usuario, $pontos, $dataInicio, $dataFim) {
         }
     }
     
+    // ✅ FILTRAR: Remover APENAS registros completamente vazios (sem horários E sem justificativa)
+    $registrosFiltrados = [];
+    foreach ($registrosPorData as $data => $registro) {
+        // Incluir registro se:
+        // 1. Tem pelo menos UM horário batido (diferente de '--'), OU
+        // 2. Tem justificativa ativa
+        $temHorario = ($registro['entrada_manha'] !== '--') || 
+                      ($registro['saida_almoco'] !== '--') || 
+                      ($registro['volta_almoco'] !== '--') || 
+                      ($registro['saida_tarde'] !== '--');
+        
+        $temJustificativa = !empty($registro['justificativa']);
+        
+        if ($temHorario || $temJustificativa) {
+            $registrosFiltrados[] = $registro;
+        }
+    }
+    
     // JavaScript fará todos os cálculos - PHP apenas retorna dados brutos
     
     return [
-        'usuario' => $usuario,
+        'usuario' => array_merge($usuario, $dadosUsuario), // ✅ Incluir dados extraídos dos pontos
         'periodo' => [
             'inicio' => $dataInicio,
             'fim' => $dataFim
         ],
-        'registros' => array_values($registrosPorData)
+        'registros' => $registrosFiltrados
     ];
 }
 
@@ -139,21 +233,49 @@ function gerarCartaoPontoHTML($usuario, $pontos, $dataInicio, $dataFim) {
         // Mapear tipos de ponto
         switch ($ponto['tipo']) {
             case 'entrada_manha':
-                $registrosPorData[$data]['entrada_manha'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['entrada_manha'] = arredondarHorario($ponto['hora']);
                 break;
             case 'saida_almoco':
-                $registrosPorData[$data]['saida_almoco'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['saida_almoco'] = arredondarHorario($ponto['hora']);
                 break;
             case 'volta_almoco':
-                $registrosPorData[$data]['volta_almoco'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['volta_almoco'] = arredondarHorario($ponto['hora']);
                 break;
             case 'saida_tarde':
-                $registrosPorData[$data]['saida_tarde'] = substr($ponto['hora'], 0, 5);
+                $registrosPorData[$data]['saida_tarde'] = arredondarHorario($ponto['hora']);
                 break;
         }
         
+        // ✅ MELHORAR: Capturar detalhes completos do ajuste
         if ($ponto['editado']) {
-            $registrosPorData[$data]['observacoes'] = 'Editado';
+            $registrosPorData[$data]['tem_edicao'] = true;
+            
+            // Adicionar detalhes do ajuste
+            $detalhesAjuste = [
+                'tipo' => $ponto['tipo'],
+                'hora_original' => $ponto['hora'], // Hora atual (já ajustada)
+                'editado_em' => $ponto['editado_em'],
+                'editado_por_nome' => $ponto['editado_por_nome'] ?? 'Sistema',
+                'motivo_ajuste' => $ponto['motivo_ajuste'] ?? 'Não informado',
+                'tempo_ajustado_minutos' => $ponto['tempo_ajustado_minutos'] ?? 0,
+                'observacao' => $ponto['observacao'] ?? ''
+            ];
+            
+            if (!isset($registrosPorData[$data]['detalhes_ajuste'])) {
+                $registrosPorData[$data]['detalhes_ajuste'] = [];
+            }
+            $registrosPorData[$data]['detalhes_ajuste'][] = $detalhesAjuste;
+            
+            // Atualizar observações com informações do ajuste
+            $observacaoAjuste = "Ajustado por {$detalhesAjuste['editado_por_nome']}";
+            if ($detalhesAjuste['motivo_ajuste'] !== 'Não informado') {
+                $observacaoAjuste .= " - Motivo: " . ucfirst(str_replace('_', ' ', $detalhesAjuste['motivo_ajuste']));
+            }
+            if ($detalhesAjuste['observacao']) {
+                $observacaoAjuste .= " - " . $detalhesAjuste['observacao'];
+            }
+            
+            $registrosPorData[$data]['observacoes'] = $observacaoAjuste;
         }
     }
     
@@ -342,6 +464,7 @@ function gerarCartaoPontoHTML($usuario, $pontos, $dataInicio, $dataFim) {
                     <th rowspan="2">Horas<br>Trabalhadas</th>
                     <th rowspan="2">Horas<br>Extras</th>
                     <th rowspan="2">Observações</th>
+                    <th rowspan="2">Detalhes<br>do Ajuste</th>
                 </tr>
                 <tr>
                     <th>Entrada</th>
@@ -365,6 +488,22 @@ function gerarCartaoPontoHTML($usuario, $pontos, $dataInicio, $dataFim) {
                     <td class="horas-trabalhadas">--</td>
                     <td class="horas-extras">--</td>
                     <td><?php echo $registro['observacoes']; ?></td>
+                    <td style="font-size: 9px; color: #666;">
+                        <?php if (isset($registro['detalhes_ajuste']) && !empty($registro['detalhes_ajuste'])): ?>
+                            <?php foreach ($registro['detalhes_ajuste'] as $ajuste): ?>
+                                <div style="margin-bottom: 2px; border-left: 2px solid #f59e0b; padding-left: 4px;">
+                                    <strong><?php echo strtoupper(str_replace('_', ' ', $ajuste['tipo'])); ?>:</strong><br>
+                                    <?php echo $ajuste['editado_por_nome']; ?> 
+                                    (<?php echo ucfirst(str_replace('_', ' ', $ajuste['motivo_ajuste'])); ?>)<br>
+                                    <?php if ($ajuste['tempo_ajustado_minutos'] > 0): ?>
+                                        <span style="color: #dc2626;">+<?php echo $ajuste['tempo_ajustado_minutos']; ?>min</span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            --
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -484,7 +623,7 @@ try {
                         
                         $stmt = $db->prepare("
                             SELECT p.*, u.nome as usuario_nome, u.cpf, u.matricula, u.cargo,
-                                   d.nome as departamento_nome,
+                                   d.nome as departamento_nome, u.grupo_jornada_id,
                                    gj.carga_diaria_minutos, gj.entrada_manha, gj.saida_almoco, 
                                    gj.volta_almoco, gj.saida_tarde,
                                    j.id as justificativa_id, j.tipo_justificativa_id, j.periodo_parcial,
@@ -567,7 +706,8 @@ try {
                                 // Verificar se já existe registro para esta data
                                 $jaExiste = false;
                                 foreach ($registros as $registro) {
-                                    if ($registro['usuario_nome'] === $justificativa['usuario_nome'] && 
+                                    // ✅ CORRIGIDO: Comparar por ID em vez de nome (evita conflito com nomes duplicados)
+                                    if ($registro['usuario_id'] == $justificativa['funcionario_id'] && 
                                         $registro['data'] === $dataStr) {
                                         $jaExiste = true;
                                         break;
@@ -612,6 +752,181 @@ try {
                         // Combinar registros de pontos com registros de justificativas
                         $registros = array_merge($registros, $registrosJustificativas);
                         
+                        // Gerar registros para domingos (FOLGA) no período
+                        $registrosDomingos = [];
+                        $inicio = new DateTime($dataInicio);
+                        $fim = new DateTime($dataFim);
+                        
+                        // Buscar todos os usuários únicos do período
+                        $usuariosUnicos = [];
+                        foreach ($registros as $registro) {
+                            $key = $registro['usuario_id'];
+                            if (!isset($usuariosUnicos[$key])) {
+                                $usuariosUnicos[$key] = [
+                                    'usuario_id' => $registro['usuario_id'],
+                                    'usuario_nome' => $registro['usuario_nome'],
+                                    'cpf' => $registro['cpf'],
+                                    'matricula' => $registro['matricula'],
+                                    'cargo' => $registro['cargo'],
+                                    'departamento_nome' => $registro['departamento_nome'],
+                                    'grupo_jornada_id' => $registro['grupo_jornada_id'] ?? null,
+                                    'carga_diaria_minutos' => $registro['carga_diaria_minutos'],
+                                    'entrada_manha' => $registro['entrada_manha'],
+                                    'saida_almoco' => $registro['saida_almoco'],
+                                    'volta_almoco' => $registro['volta_almoco'],
+                                    'saida_tarde' => $registro['saida_tarde']
+                                ];
+                            }
+                        }
+                        
+                        // Se não há usuários únicos (período sem registros), buscar usuários ativos
+                        if (empty($usuariosUnicos)) {
+                            $usuariosStmt = $db->prepare("
+                                SELECT u.id as usuario_id, u.nome as usuario_nome, u.cpf, u.matricula, u.cargo,
+                                       d.nome as departamento_nome, u.grupo_jornada_id,
+                                       gj.carga_diaria_minutos, gj.entrada_manha, gj.saida_almoco, 
+                                       gj.volta_almoco, gj.saida_tarde
+                                FROM usuarios u
+                                LEFT JOIN departamentos d ON u.departamento_id = d.id
+                                LEFT JOIN grupos_jornada gj ON u.grupo_jornada_id = gj.id
+                                WHERE u.tipo = 'funcionario' AND u.ativo = 1
+                            ");
+                            $usuariosStmt->execute();
+                            $usuariosAtivos = $usuariosStmt->fetchAll(PDO::FETCH_ASSOC);
+                            
+                            foreach ($usuariosAtivos as $usuario) {
+                                $usuariosUnicos[$usuario['usuario_id']] = $usuario;
+                            }
+                        }
+                        
+                        // Se há filtro por usuário específico, garantir que ele esteja na lista
+                        if ($usuarioId && !isset($usuariosUnicos[$usuarioId])) {
+                            $userStmt = $db->prepare("
+                                SELECT u.id as usuario_id, u.nome as usuario_nome, u.cpf, u.matricula, u.cargo,
+                                       d.nome as departamento_nome, u.grupo_jornada_id,
+                                       gj.carga_diaria_minutos, gj.entrada_manha, gj.saida_almoco, 
+                                       gj.volta_almoco, gj.saida_tarde
+                                FROM usuarios u
+                                LEFT JOIN departamentos d ON u.departamento_id = d.id
+                                LEFT JOIN grupos_jornada gj ON u.grupo_jornada_id = gj.id
+                                WHERE u.id = ? AND u.tipo = 'funcionario' AND u.ativo = 1
+                            ");
+                            $userStmt->execute([$usuarioId]);
+                            $usuarioEspecifico = $userStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if ($usuarioEspecifico) {
+                                $usuariosUnicos[$usuarioId] = $usuarioEspecifico;
+                            }
+                        }
+                        
+                        // ✅ OTIMIZAÇÃO: Buscar configurações de todos os grupos de jornada de uma vez (evitar N+1 queries)
+                        $gruposJornadaConfig = [];
+                        if (!empty($usuariosUnicos)) {
+                            $gruposIds = [];
+                            foreach ($usuariosUnicos as $usuario) {
+                                if (isset($usuario['grupo_jornada_id']) && $usuario['grupo_jornada_id']) {
+                                    $gruposIds[] = $usuario['grupo_jornada_id'];
+                                }
+                            }
+                            
+                            if (!empty($gruposIds)) {
+                                $gruposIds = array_unique($gruposIds);
+                                $placeholders = str_repeat('?,', count($gruposIds) - 1) . '?';
+                                
+                                $grupoStmt = $db->prepare("
+                                    SELECT id, domingo_folga, sabado_ativo 
+                                    FROM grupos_jornada 
+                                    WHERE id IN ($placeholders)
+                                ");
+                                $grupoStmt->execute($gruposIds);
+                                $gruposResultados = $grupoStmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                // Indexar por ID para acesso rápido O(1)
+                                foreach ($gruposResultados as $grupo) {
+                                    $gruposJornadaConfig[$grupo['id']] = $grupo;
+                                }
+                            }
+                        }
+                        
+                        // Para cada usuário, verificar domingos no período
+                        foreach ($usuariosUnicos as $usuario) {
+                            $dataAtual = clone $inicio;
+                            while ($dataAtual <= $fim) {
+                                $diaSemana = (int) $dataAtual->format('w'); // 0 = domingo
+                                $dataStr = $dataAtual->format('Y-m-d');
+                                
+                                // Se é domingo, verificar se o grupo de jornada considera domingo como folga
+                                if ($diaSemana === 0) {
+                                    // Verificar se domingo é folga para este usuário
+                                    $domingoFolga = true; // Padrão: domingo é folga
+                                    
+                                    // ✅ OTIMIZADO: Usar cache em vez de query por usuário
+                                    if (isset($usuario['grupo_jornada_id']) && 
+                                        isset($gruposJornadaConfig[$usuario['grupo_jornada_id']])) {
+                                        $domingoFolga = (bool) $gruposJornadaConfig[$usuario['grupo_jornada_id']]['domingo_folga'];
+                                    }
+                                    
+                                    // Só criar registro de domingo se for configurado como folga
+                                    if ($domingoFolga) {
+                                        $jaExiste = false;
+                                        // Verificar em todos os registros (pontos + justificativas)
+                                        foreach ($registros as $registro) {
+                                            if ($registro['usuario_id'] == $usuario['usuario_id'] && $registro['data'] == $dataStr) {
+                                                $jaExiste = true;
+                                                break;
+                                            }
+                                        }
+                                        // Verificar também nos registros de domingos já criados
+                                        foreach ($registrosDomingos as $domingo) {
+                                            if ($domingo['usuario_id'] == $usuario['usuario_id'] && $domingo['data'] == $dataStr) {
+                                                $jaExiste = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        // Se não existe, criar registro fictício para domingo (FOLGA)
+                                        if (!$jaExiste) {
+                                            $registrosDomingos[] = [
+                                                'id' => null,
+                                                'usuario_id' => $usuario['usuario_id'],
+                                                'data' => $dataStr,
+                                                'hora' => null,
+                                                'tipo' => null,
+                                                'editado' => 0,
+                                                'editado_por' => null,
+                                                'created_at' => null,
+                                                'updated_at' => null,
+                                                'usuario_nome' => $usuario['usuario_nome'],
+                                                'cpf' => $usuario['cpf'],
+                                                'matricula' => $usuario['matricula'],
+                                                'cargo' => $usuario['cargo'],
+                                                'departamento_nome' => $usuario['departamento_nome'],
+                                                'carga_diaria_minutos' => $usuario['carga_diaria_minutos'],
+                                                'entrada_manha' => $usuario['entrada_manha'],
+                                                'saida_almoco' => $usuario['saida_almoco'],
+                                                'volta_almoco' => $usuario['volta_almoco'],
+                                                'saida_tarde' => $usuario['saida_tarde'],
+                                                'justificativa_id' => null,
+                                                'tipo_justificativa_id' => null,
+                                                'periodo_parcial' => null,
+                                                'justificativa_motivo' => null,
+                                                'justificativa_status' => null,
+                                                'justificativa_codigo' => null,
+                                                'justificativa_tipo_nome' => null,
+                                                'is_domingo' => true, // Flag para identificar domingos
+                                                'domingo_folga' => $domingoFolga // Flag para indicar se é folga
+                                            ];
+                                        }
+                                    }
+                                }
+                                
+                                $dataAtual->add(new DateInterval('P1D'));
+                            }
+                        }
+                        
+                        // Combinar todos os registros (pontos + justificativas + domingos)
+                        $registros = array_merge($registros, $registrosDomingos);
+                        
                         // Ordenar por usuário e data
                         usort($registros, function($a, $b) {
                             $cmp = strcmp($a['usuario_nome'], $b['usuario_nome']);
@@ -640,19 +955,40 @@ try {
                             $usuarioDataFinal = $registros[0];
                         }
                         
-                        // Atualizar todos os registros com dados completos do usuário
+                        // Atualizar registros com dados completos do usuário
                         if ($usuarioDataFinal) {
-                            // Dados do usuário encontrados - aplicar a todos os registros
+                            // ✅ CORRIGIDO: Preencher APENAS dados vazios (não sobrescrever horários existentes)
+                            // Isso respeita o histórico de mudanças de jornada
                             
                             foreach ($registros as &$registro) {
-                                $registro['usuario_nome'] = $usuarioDataFinal['usuario_nome'];
-                                $registro['matricula'] = $usuarioDataFinal['matricula'];
-                                $registro['cargo'] = $usuarioDataFinal['cargo'];
-                                $registro['departamento_nome'] = $usuarioDataFinal['departamento_nome'];
-                                $registro['entrada_manha'] = $usuarioDataFinal['entrada_manha'];
-                                $registro['saida_almoco'] = $usuarioDataFinal['saida_almoco'];
-                                $registro['volta_almoco'] = $usuarioDataFinal['volta_almoco'];
-                                $registro['saida_tarde'] = $usuarioDataFinal['saida_tarde'];
+                                // Atualizar dados pessoais se vazios
+                                if (empty($registro['usuario_nome'])) {
+                                    $registro['usuario_nome'] = $usuarioDataFinal['usuario_nome'];
+                                }
+                                if (empty($registro['matricula'])) {
+                                    $registro['matricula'] = $usuarioDataFinal['matricula'];
+                                }
+                                if (empty($registro['cargo'])) {
+                                    $registro['cargo'] = $usuarioDataFinal['cargo'];
+                                }
+                                if (empty($registro['departamento_nome'])) {
+                                    $registro['departamento_nome'] = $usuarioDataFinal['departamento_nome'];
+                                }
+                                
+                                // ✅ HORÁRIOS: Preencher APENAS se NULL (registros fictícios de justificativas/domingos)
+                                // NÃO sobrescrever horários de registros reais (respeitar mudanças de grupo de jornada)
+                                if (!isset($registro['entrada_manha']) || $registro['entrada_manha'] === null) {
+                                    $registro['entrada_manha'] = $usuarioDataFinal['entrada_manha'];
+                                }
+                                if (!isset($registro['saida_almoco']) || $registro['saida_almoco'] === null) {
+                                    $registro['saida_almoco'] = $usuarioDataFinal['saida_almoco'];
+                                }
+                                if (!isset($registro['volta_almoco']) || $registro['volta_almoco'] === null) {
+                                    $registro['volta_almoco'] = $usuarioDataFinal['volta_almoco'];
+                                }
+                                if (!isset($registro['saida_tarde']) || $registro['saida_tarde'] === null) {
+                                    $registro['saida_tarde'] = $usuarioDataFinal['saida_tarde'];
+                                }
                             }
                         }
                         
@@ -693,14 +1029,24 @@ try {
                             return;
                         }
                         
-                        // Buscar pontos do período com justificativas (mesma lógica do relatório)
+                        // ✅ CORRIGIDO: Buscar pontos COM dados completos do usuário
                         $stmt = $db->prepare("
                             SELECT p.*, 
+                                   u.nome as usuario_nome, u.cpf, u.matricula, u.cargo,
+                                   d.nome as departamento_nome,
+                                   gj.carga_diaria_minutos, gj.tolerancia_minutos,
+                                   gj.entrada_manha as jornada_entrada_manha, 
+                                   gj.saida_almoco as jornada_saida_almoco,
+                                   gj.volta_almoco as jornada_volta_almoco, 
+                                   gj.saida_tarde as jornada_saida_tarde,
                                    u_editor.nome as editado_por_nome,
                                    j.id as justificativa_id, j.tipo_justificativa_id, j.periodo_parcial,
                                    j.motivo as justificativa_motivo, j.status as justificativa_status,
                                    tj.codigo as justificativa_codigo, tj.nome as justificativa_tipo_nome
                             FROM pontos p
+                            JOIN usuarios u ON p.usuario_id = u.id
+                            LEFT JOIN departamentos d ON u.departamento_id = d.id
+                            LEFT JOIN grupos_jornada gj ON u.grupo_jornada_id = gj.id
                             LEFT JOIN usuarios u_editor ON p.editado_por = u_editor.id
                             LEFT JOIN justificativas j ON (
                                 j.funcionario_id = p.usuario_id 
@@ -716,11 +1062,21 @@ try {
                         $stmt->execute([$usuarioId, $dataInicio, $dataFim]);
                         $pontos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         
-                        // Buscar justificativas ativas para o usuário no período
+                        // ✅ CORRIGIDO: Buscar justificativas COM dados do usuário
                         $justificativasStmt = $db->prepare("
-                            SELECT j.*, tj.codigo as justificativa_codigo, tj.nome as justificativa_tipo_nome
+                            SELECT j.*, tj.codigo as justificativa_codigo, tj.nome as justificativa_tipo_nome,
+                                   u.nome as usuario_nome, u.cpf, u.matricula, u.cargo,
+                                   d.nome as departamento_nome,
+                                   gj.carga_diaria_minutos, gj.tolerancia_minutos,
+                                   gj.entrada_manha as jornada_entrada_manha,
+                                   gj.saida_almoco as jornada_saida_almoco,
+                                   gj.volta_almoco as jornada_volta_almoco,
+                                   gj.saida_tarde as jornada_saida_tarde
                             FROM justificativas j
                             JOIN tipos_justificativa tj ON j.tipo_justificativa_id = tj.id
+                            JOIN usuarios u ON j.funcionario_id = u.id
+                            LEFT JOIN departamentos d ON u.departamento_id = d.id
+                            LEFT JOIN grupos_jornada gj ON u.grupo_jornada_id = gj.id
                             WHERE j.funcionario_id = ?
                             AND j.status = 'ativa'
                             AND j.data_inicio <= ? 
@@ -768,6 +1124,18 @@ try {
                                         'created_at' => null,
                                         'updated_at' => null,
                                         'editado_por_nome' => null,
+                                        // ✅ ADICIONAR: Dados do usuário da justificativa
+                                        'usuario_nome' => $justificativa['usuario_nome'],
+                                        'cpf' => $justificativa['cpf'],
+                                        'matricula' => $justificativa['matricula'],
+                                        'cargo' => $justificativa['cargo'],
+                                        'departamento_nome' => $justificativa['departamento_nome'],
+                                        'carga_diaria_minutos' => $justificativa['carga_diaria_minutos'],
+                                        'tolerancia_minutos' => $justificativa['tolerancia_minutos'],
+                                        'jornada_entrada_manha' => $justificativa['jornada_entrada_manha'],
+                                        'jornada_saida_almoco' => $justificativa['jornada_saida_almoco'],
+                                        'jornada_volta_almoco' => $justificativa['jornada_volta_almoco'],
+                                        'jornada_saida_tarde' => $justificativa['jornada_saida_tarde'],
                                         'justificativa_id' => $justificativa['id'],
                                         'tipo_justificativa_id' => $justificativa['tipo_justificativa_id'],
                                         'periodo_parcial' => $justificativa['periodo_parcial'],
@@ -808,6 +1176,12 @@ try {
                             'email' => $configs['empresa_email'] ?? 'contato@techponto.com',
                             'logo' => $configs['empresa_logo'] ?? ''
                         ];
+                        
+                        // ✅ ADICIONAR: Enriquecer dados do usuário no retorno para facilitar acesso do frontend
+                        $dadosBrutos['usuario']['entrada_manha_jornada'] = $usuario['entrada_manha'] ?? '08:00:00';
+                        $dadosBrutos['usuario']['saida_almoco_jornada'] = $usuario['saida_almoco'] ?? '12:00:00';
+                        $dadosBrutos['usuario']['volta_almoco_jornada'] = $usuario['volta_almoco'] ?? '13:00:00';
+                        $dadosBrutos['usuario']['saida_tarde_jornada'] = $usuario['saida_tarde'] ?? '18:00:00';
                         
                         // Adicionar timestamp único para forçar atualização do cache
                         $response_data = [

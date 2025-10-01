@@ -705,12 +705,12 @@ tr:hover {
 }
 
 /* Classes para indicadores de saldo */
-.extra {
+.extra, .extras {
     color: #10b981;
     font-weight: bold;
 }
 
-.falta {
+.falta, .faltas {
     color: #ef4444;
     font-weight: bold;
 }
@@ -741,6 +741,10 @@ tr:hover {
 
 .justificativa.licenca {
     background-color: #06b6d4; /* ciano */
+}
+
+.justificativa.domingo-folga {
+    background-color: #6366f1; /* índigo */
 }
 
 .justificativa.folga {
